@@ -28,10 +28,10 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.authorizeHttpRequests((auth) -> {
-                    auth.requestMatchers("/admin/**").hasAuthority("ADMIN")
-                            .requestMatchers("/instructor/**").hasAuthority("INSTRUCTOR")
-                            .requestMatchers("/employee/**").hasAuthority("EMPLOYEE")
-                            .requestMatchers("/public/**").permitAll()
+                    auth.requestMatchers("/api/admin/**").hasAuthority("ADMIN")
+                            .requestMatchers("/api/instructor/**").hasAuthority("INSTRUCTOR")
+                            .requestMatchers("/api/employee/**").hasAuthority("EMPLOYEE")
+                            .requestMatchers("/api/public/**").permitAll()
                             .anyRequest().authenticated();
                 })
                 .formLogin(Customizer.withDefaults())
