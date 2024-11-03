@@ -61,6 +61,7 @@ public class EmployeeController {
     public ResponseEntity<List<CourseInfoDTO>> viewCourses() {
         CourseInfoDTO courseInfoDTO = new CourseInfoDTO();
         return ResponseEntity.ok(courseService.getAllCourses().stream().map((course -> {
+            courseInfoDTO.setId(course.getId());
             courseInfoDTO.setTitle(course.getTitle());
             courseInfoDTO.setDescription(course.getDescription());
             courseInfoDTO.setInstructorId(course.getInstructor().getId());
