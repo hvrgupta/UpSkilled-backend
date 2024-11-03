@@ -83,10 +83,10 @@ public class EmployeeController {
             return ResponseEntity.badRequest().body("Invalid course ID");
         }
 
-        // Check if the employee is enrolled in the course
-//        if (!course.getEnrolledEmployees().contains(employee)) {
-//            return ResponseEntity.status(403).body("You are not enrolled in this course");
-//        }
+//      Check if the employee is enrolled in the course
+        if (course.getEnrollments().stream().noneMatch(enrollment -> enrollment.getEmployee().equals(employee))) {
+            return ResponseEntity.status(403).body("You are not enrolled in this course");
+        }
 
         // Fetch and return the announcements
         Set<Announcement> announcements = announcementService.getAnnouncementsByCourseId(courseId);
