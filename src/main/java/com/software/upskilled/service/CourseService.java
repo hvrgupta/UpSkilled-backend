@@ -5,6 +5,8 @@ import com.software.upskilled.repository.CourseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class CourseService {
     @Autowired
@@ -19,4 +21,6 @@ public class CourseService {
     }
 
     public Course findByTitle(String title) { return courseRepository.findByTitle(title); }
+
+    public List<Course> getAllCourses() { return courseRepository.findAll(); }
 }

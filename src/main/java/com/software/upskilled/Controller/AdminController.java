@@ -88,7 +88,7 @@ public class AdminController {
 
     @PostMapping("/approve/{instructorId}")
     public ResponseEntity<String> approveInstructor(@PathVariable Long instructorId) {
-        Users instructor = userService.findUserById(instructorId);
+          Users instructor = userService.findUserById(instructorId);
         if (instructor == null || !instructor.getRole().equals("INSTRUCTOR")) {
             return ResponseEntity.badRequest().body("Invalid instructor ID");
         }
