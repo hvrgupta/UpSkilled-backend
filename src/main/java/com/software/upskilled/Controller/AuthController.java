@@ -6,10 +6,9 @@ import com.software.upskilled.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -18,6 +17,20 @@ public class AuthController {
     @Autowired
     private UserService userService;
 
+    @GetMapping("/user")
+    public CreateUserDTO getCurrentUser(@AuthenticationPrincipal Users user) {
+        if(user == null) throw new UsernameNotFoundException("user not logged in");
+        CreateUserDTO userDTO = new CreateUserDTO();
+        userDTO.setId(user.getId());
+        userDTO.setEmail(user.getEmail());
+        userDTO.setRole(user.getRole());
+        userDTO.setPassword("*******");
+        userDTO.setFirstName(user.getFirstName());
+        userDTO.setLastName(user.getLastName());
+        userDTO.setDesignation(user.getDesignation());
+        userDTO.setStatus(user.getStatus());
+        return userDTO;
+    }
     @PostMapping("/signup")
     public ResponseEntity<String> registerUser(@RequestBody CreateUserDTO userDTO) {
         try {
