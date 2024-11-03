@@ -4,10 +4,12 @@ import com.software.upskilled.Entity.Course;
 import com.software.upskilled.Entity.Users;
 import com.software.upskilled.service.CourseService;
 import com.software.upskilled.service.UserService;
+import lombok.experimental.UtilityClass;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Component;
 
-
+@Component
 public class InstructorCourseAuth {
 
     private final UserService userService;

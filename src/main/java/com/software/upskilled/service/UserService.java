@@ -1,14 +1,18 @@
 package com.software.upskilled.service;
 
 
+import com.software.upskilled.Entity.Course;
 import com.software.upskilled.Entity.Users;
 import com.software.upskilled.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.parameters.P;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class UserService implements UserDetailsService {
@@ -29,10 +33,13 @@ public class UserService implements UserDetailsService {
         return userDetails;
     }
 
-    public Long createUser(Users appUser){
+    public void createUser(Users appUser) throws Exception {
+        Users user = findUserByEmail(appUser.getEmail());
+        if(user != null) {
+            throw new Exception("Email already exists");
+        }
         appUser.setPassword(passwordEncoder.encode(appUser.getPassword()));
         userRepository.save(appUser);
-        return appUser.getId();
     }
 
     public Users findUserById(Long id) {
@@ -41,5 +48,21 @@ public class UserService implements UserDetailsService {
 
     public Users findUserByEmail(String email) {
         return userRepository.findByEmail(email);
+    }
+
+    public List<Users> getInstructors() {
+        return userRepository.findByRole("INSTRUCTOR");
+    }
+
+    public List<Users> getActiveInstructors() {
+        return userRepository.findByRoleAndStatus("INSTRUCTOR", Users.Status.ACTIVE);
+    }
+
+    public List<Users> getInactiveInstructors() {
+        return userRepository.findByRoleAndStatus("INSTRUCTOR", Users.Status.INACTIVE);
+    }
+
+    public Users saveUser(Users user) {
+        return userRepository.save(user);
     }
 }

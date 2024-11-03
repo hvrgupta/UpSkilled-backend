@@ -41,14 +41,12 @@ public class Course {
     @JoinColumn(name = "instructor_id")
     private Users instructor;
 
-    @ManyToMany
-    @JoinTable(
-            name = "employee_courses",
-            joinColumns = @JoinColumn(name="course_id"),
-            inverseJoinColumns = @JoinColumn(name = "employee_id")
-    )
-    private Set<Users> enrolledEmployees;
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL)
+    private Set<Enrollment> enrollments;
 
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL)
     private Set<Announcement> announcements;
+
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL)
+    private Set<Assignment> assignments;
 }

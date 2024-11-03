@@ -33,6 +33,7 @@ public class SecurityConfig {
                             .requestMatchers("/api/instructor/**").hasAuthority("INSTRUCTOR")
                             .requestMatchers("/api/employee/**").hasAuthority("EMPLOYEE")
                             .requestMatchers("/api/public/**").permitAll()
+                            .requestMatchers("/api/auth/**").permitAll()
                             .anyRequest().authenticated();
                 })
                 .formLogin(Customizer.withDefaults())

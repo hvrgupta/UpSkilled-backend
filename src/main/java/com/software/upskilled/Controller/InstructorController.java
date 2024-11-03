@@ -5,6 +5,7 @@ import com.software.upskilled.Entity.Assignment;
 import com.software.upskilled.Entity.Course;
 import com.software.upskilled.Entity.Users;
 import com.software.upskilled.dto.AnnouncementDTO;
+import com.software.upskilled.dto.CreateUserDTO;
 import com.software.upskilled.service.*;
 import com.software.upskilled.utils.InstructorCourseAuth;
 import lombok.RequiredArgsConstructor;
@@ -13,12 +14,12 @@ import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -49,24 +50,29 @@ public class InstructorController {
         return "Hello Instructor";
     }
 
+    @GetMapping("/me")
+    public CreateUserDTO getCurrentUser(@AuthenticationPrincipal Users user) {
+        CreateUserDTO userDTO = new CreateUserDTO();
+        userDTO.setId(user.getId());
+        userDTO.setEmail(user.getEmail());
+        userDTO.setRole(user.getRole());
+        userDTO.setPassword("*******");
+        userDTO.setFirstName(user.getFirstName());
+        userDTO.setLastName(user.getLastName());
+        userDTO.setDesignation(user.getDesignation());
+        userDTO.setStatus(user.getStatus());
+        return userDTO;
+    }
+
     // View announcements for a specific course
     @GetMapping("/course/{courseId}/announcements")
     public ResponseEntity<?> viewAnnouncementsForEditing(
             @PathVariable Long courseId, Authentication authentication) {
 
-        // Get the currently authenticated user (instructor)
-        String email = authentication.getName();
-        Users instructor = userService.findUserByEmail(email);
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseId, authentication);
 
-        Course course = courseService.findCourseById(courseId);
-
-        if (course == null) {
-            return ResponseEntity.badRequest().body("Invalid course ID");
-        }
-
-        // Check if the instructor is assigned to this course
-        if (!course.getInstructor().getId().equals(instructor.getId())) {
-            return ResponseEntity.status(403).body("You are not the instructor of this course");
+        if (authResponse != null) {
+            return authResponse;
         }
 
         // Fetch the announcements for the course
@@ -87,18 +93,13 @@ public class InstructorController {
             @RequestBody AnnouncementDTO announcementDTO,
             Authentication authentication) {
 
-        String email = authentication.getName();
-        Users instructor = userService.findUserByEmail(email);
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseId, authentication);
+
+        if (authResponse != null) {
+            return authResponse;
+        }
 
         Course course = courseService.findCourseById(courseId);
-
-        if (course == null) {
-            return ResponseEntity.badRequest().body("Invalid course ID");
-        }
-
-        if (!course.getInstructor().getId().equals(instructor.getId())) {
-            return ResponseEntity.status(403).body("You are not the instructor of this course");
-        }
 
         Announcement announcement = Announcement.builder()
                         .title(announcementDTO.getTitle())
@@ -193,34 +194,29 @@ public class InstructorController {
 
     }
 
+    /*
     @PostMapping("/{courseId}/assignment/create")
     public ResponseEntity<String> createAssignment(@PathVariable Long courseId,
                                                        @RequestBody Assignment assignment,Authentication authentication) {
 
-        String email = authentication.getName();
-        Users instructor = userService.findUserByEmail(email);
-
-        Course course = courseService.findCourseById(courseId);
-//
-//        if (course == null) {
-//            return ResponseEntity.badRequest().body("Invalid course ID");
-//        }
-//
-//        // Check if the instructor is assigned to this course
-//        if (!course.getInstructor().getId().equals(instructor.getId())) {
-//            return ResponseEntity.status(403).body("You are not the instructor of this course");
-//        }
-
         ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseId, authentication);
+
         if (authResponse != null) {
             return authResponse;
         }
+
+        String email = authentication.getName();
+
+        Users instructor = userService.findUserByEmail(email);
+
+        Course course = courseService.findCourseById(courseId);
 
         // Set course and creator (instructor)
         assignment.setCourse(course);
         assignment.setCreatedBy(instructor);
 
-        Assignment savedAssignment = assignmentService.createAssignment(assignment);
+        assignmentService.createAssignment(assignment);
+
         return ResponseEntity.ok("Assignment Created successfully.");
     }
 
@@ -230,21 +226,17 @@ public class InstructorController {
                                                        @PathVariable Long assignmentId,
                                                        @RequestBody Assignment updatedAssignment,
                                                    Authentication authentication) {
-        String email = authentication.getName();
-        Users instructor = userService.findUserByEmail(email);
+
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseId, authentication);
+
+        if (authResponse != null) {
+            return authResponse;
+        }
 
         Course course = courseService.findCourseById(courseId);
 
-        if (course == null) {
-            return ResponseEntity.badRequest().body("Invalid course ID");
-        }
-
-        // Check if the instructor is assigned to this course
-        if (!course.getInstructor().getId().equals(instructor.getId())) {
-            return ResponseEntity.status(403).body("You are not the instructor of this course");
-        }
-
         Assignment existingAssignment = assignmentService.getAssignmentById(assignmentId);
+
         if(existingAssignment == null) return ResponseEntity.badRequest().body("Invalid Assignnment ID");
 
         if(!existingAssignment.getCourse().getId().equals(course.getId())) {
@@ -265,20 +257,13 @@ public class InstructorController {
                                                  @PathVariable Long assignmentId,
                                                  Authentication authentication) {
 
-        String email = authentication.getName();
-        Users instructor = userService.findUserByEmail(email);
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseId, authentication);
+
+        if (authResponse != null) {
+            return authResponse;
+        }
 
         Course course = courseService.findCourseById(courseId);
-
-        if (course == null) {
-            return ResponseEntity.badRequest().body("Invalid course ID");
-        }
-
-        // Check if the instructor is assigned to this course
-        if (!course.getInstructor().getId().equals(instructor.getId())) {
-            return ResponseEntity.status(403).body("You are not the instructor of this course");
-        }
-
 
         Assignment existingAssignment = assignmentService.getAssignmentById(assignmentId);
 
@@ -294,5 +279,5 @@ public class InstructorController {
 
         return ResponseEntity.ok("Assignment Deleted successfully");
     }
-
+    */
 }

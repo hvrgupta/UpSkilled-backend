@@ -6,6 +6,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.util.Date;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -36,6 +37,9 @@ public class Assignment {
     @ManyToOne
     @JoinColumn(name = "created_by_user_id", nullable = false)
     private Users createdBy;
+
+    @OneToMany(mappedBy = "assignment", cascade = CascadeType.ALL)
+    private Set<Submission> submissions;
 
     @CreationTimestamp
     @Column(updatable = false, name = "created_at")

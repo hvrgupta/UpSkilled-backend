@@ -17,4 +17,6 @@ public class CourseService {
     public Course findCourseById(Long courseId) {
         return courseRepository.findById(courseId).orElse(null);
     }
+
+    public Course findByTitle(String title) { return courseRepository.findByTitle(title); }
 }

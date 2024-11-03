@@ -4,14 +4,13 @@ import com.software.upskilled.Entity.Announcement;
 import com.software.upskilled.Entity.Course;
 import com.software.upskilled.Entity.Users;
 import com.software.upskilled.dto.AnnouncementDTO;
-import com.software.upskilled.service.AnnouncementService;
-import com.software.upskilled.service.CourseService;
-import com.software.upskilled.service.FileService;
-import com.software.upskilled.service.UserService;
+import com.software.upskilled.dto.CreateUserDTO;
+import com.software.upskilled.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -34,32 +33,41 @@ public class EmployeeController {
     @Autowired
     private FileService fileService;
 
+    @Autowired
+    private EnrollmentService enrollmentService;
+
     @GetMapping("/hello")
     public String hello(){
         return "Hello Employee";
+    }
+
+    @GetMapping("/me")
+    public CreateUserDTO getCurrentUser(@AuthenticationPrincipal Users user) {
+        CreateUserDTO userDTO = new CreateUserDTO();
+        userDTO.setId(user.getId());
+        userDTO.setEmail(user.getEmail());
+        userDTO.setRole(user.getRole());
+        userDTO.setPassword("*******");
+        userDTO.setFirstName(user.getFirstName());
+        userDTO.setLastName(user.getLastName());
+        userDTO.setDesignation(user.getDesignation());
+        userDTO.setStatus(user.getStatus());
+        return userDTO;
     }
 
     @PostMapping("/enroll")
     public ResponseEntity<String> enrollInCourse(
             @RequestParam Long courseId,
             Authentication authentication) {
-
-        // Get the currently authenticated user (employee)
         String email = authentication.getName();
         Users employee = userService.findUserByEmail(email);
-
-        // Find the course by its ID
         Course course = courseService.findCourseById(courseId);
 
         if (course == null) {
             return ResponseEntity.badRequest().body("Invalid course ID");
         }
 
-        // Add employee to the course's enrolledEmployees
-        course.getEnrolledEmployees().add(employee);
-        courseService.saveCourse(course);
-
-        return ResponseEntity.ok("You have been enrolled in the course: " + course.getTitle());
+        return ResponseEntity.ok(enrollmentService.enrollEmployee(courseId, employee.getId()));
     }
 
     @GetMapping("/course/{courseId}/announcements")
@@ -76,9 +84,9 @@ public class EmployeeController {
         }
 
         // Check if the employee is enrolled in the course
-        if (!course.getEnrolledEmployees().contains(employee)) {
-            return ResponseEntity.status(403).body("You are not enrolled in this course");
-        }
+//        if (!course.getEnrolledEmployees().contains(employee)) {
+//            return ResponseEntity.status(403).body("You are not enrolled in this course");
+//        }
 
         // Fetch and return the announcements
         Set<Announcement> announcements = announcementService.getAnnouncementsByCourseId(courseId);
