@@ -53,7 +53,7 @@ public class AdminController {
     @GetMapping("/listInstructors")
     public ResponseEntity<List<CreateUserDTO>> getInstructorsList() {
 
-        List<CreateUserDTO> instructorList = userService.getInactiveInstructors().stream().map((instructor) -> {
+        List<CreateUserDTO> instructorList = new ArrayList<>(userService.getInactiveInstructors().stream().map((instructor) -> {
             CreateUserDTO userDTO = new CreateUserDTO();
             userDTO.setEmail(instructor.getEmail());
             userDTO.setRole(instructor.getRole());
@@ -64,7 +64,7 @@ public class AdminController {
             userDTO.setId(instructor.getId());
             userDTO.setStatus(instructor.getStatus());
             return userDTO;
-        }).toList();
+        }).toList());
         List<CreateUserDTO> activeInstructorList = userService.getActiveInstructors().stream().map((instructor) -> {
             CreateUserDTO userDTO = new CreateUserDTO();
             userDTO.setEmail(instructor.getEmail());
@@ -77,6 +77,9 @@ public class AdminController {
             userDTO.setStatus(instructor.getStatus());
             return userDTO;
         }).toList();
+        if(instructorList.isEmpty()) {
+            return ResponseEntity.ok(activeInstructorList);
+        }
         instructorList.addAll(activeInstructorList);
         return ResponseEntity.ok(instructorList);
     }
