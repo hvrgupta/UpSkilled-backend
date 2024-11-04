@@ -1,5 +1,6 @@
 package com.software.upskilled.utils;
 
+import com.software.upskilled.Entity.Users;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -21,8 +22,12 @@ public class JWTUtil {
         this.secret = secret;
     }
 
-    public String generateToken(String email) {
+    public String generateToken(String email, String firstName, String lastName, String role, Users.Status status) {
         Map<String, Object> claims = new HashMap<>();
+        claims.put("firstName", firstName);
+        claims.put("lastName", lastName);
+        claims.put("role", role);
+        claims.put("status", status);
         return createToken(claims, email);
     }
 

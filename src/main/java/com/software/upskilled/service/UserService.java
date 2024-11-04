@@ -5,6 +5,7 @@ import com.software.upskilled.Entity.Course;
 import com.software.upskilled.Entity.Users;
 import com.software.upskilled.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.parameters.P;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -20,6 +21,7 @@ public class UserService implements UserDetailsService {
     @Autowired
     private UserRepository userRepository;
     @Autowired
+    @Lazy
     private PasswordEncoder passwordEncoder;
 
 //    @Autowired

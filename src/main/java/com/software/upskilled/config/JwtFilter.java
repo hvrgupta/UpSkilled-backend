@@ -1,5 +1,6 @@
 package com.software.upskilled.config;
 
+
 import com.software.upskilled.service.UserService;
 import com.software.upskilled.utils.JWTUtil;
 import jakarta.servlet.FilterChain;
@@ -22,12 +23,8 @@ public class JwtFilter extends OncePerRequestFilter {
     @Autowired
     private JWTUtil jwtUtil;
 
-
-    private final UserService userService;
-
-    public JwtFilter(UserService userService) {
-        this.userService = userService;
-    }
+    @Autowired
+    private UserService myUserDetailsService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
@@ -43,7 +40,7 @@ public class JwtFilter extends OncePerRequestFilter {
         }
 
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = userService.loadUserByUsername(email);
+            UserDetails userDetails = this.myUserDetailsService.loadUserByUsername(email);
             if (jwtUtil.validateToken(jwt, userDetails.getUsername())) {
                 // Create an authentication object and set it in the context
                 UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken =

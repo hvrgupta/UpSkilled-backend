@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     @Autowired
-    private UserService userService;
+    private UserService usersDetailsService;
 
     @Autowired
     private AuthenticationManager authenticationManager;
@@ -55,11 +55,11 @@ public class AuthController {
             user.setDesignation(userDTO.getDesignation());
             if("INSTRUCTOR".equalsIgnoreCase(userDTO.getRole())) {
                 user.setStatus(Users.Status.INACTIVE);
-                userService.createUser(user);
+                usersDetailsService.createUser(user);
             }
             else if("EMPLOYEE".equalsIgnoreCase(userDTO.getRole())){
                 user.setStatus(Users.Status.ACTIVE);
-                userService.createUser(user);
+                usersDetailsService.createUser(user);
             }else {
                 throw new Exception("Role specified is incorrect");
             }
@@ -78,8 +78,9 @@ public class AuthController {
                     new UsernamePasswordAuthenticationToken(authRequest.getEmail(), authRequest.getPassword())
             );
             if(authentication.isAuthenticated()) {
-//                UserDetails userDetails = userService.loadUserByUsername(authRequest.getEmail());
-                return jwtUtil.generateToken(authRequest.getEmail());
+//                UserDetails userDetails = usersDetailsService.loadUserByUsername(authRequest.getEmail());
+                 Users user = usersDetailsService.findUserByEmail(authRequest.getEmail());
+                return jwtUtil.generateToken(user.getEmail(),user.getFirstName(),user.getLastName(),user.getRole(),user.getStatus());
             }
 
         } catch (Exception e) {

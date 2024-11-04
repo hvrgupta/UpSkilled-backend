@@ -1,9 +1,14 @@
 package com.software.upskilled.config;
 
+import com.software.upskilled.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -27,6 +32,15 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+    private final JwtFilter jwtFilter;
+    private final UserService myUsersDetailsService;
+
+    @Autowired
+    public SecurityConfig(JwtFilter jwtFilter, UserService myUsersDetailsService) {
+        this.jwtFilter = jwtFilter;
+        this.myUsersDetailsService = myUsersDetailsService;
+    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity
@@ -39,10 +53,10 @@ public class SecurityConfig {
                             .requestMatchers("/api/auth/**").permitAll()
                             .anyRequest().authenticated();
                 })
-                .formLogin(Customizer.withDefaults())
-                .httpBasic(Customizer.withDefaults())
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .csrf(AbstractHttpConfigurer::disable);
-
+        httpSecurity.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return httpSecurity.build();
     }
 
@@ -58,4 +72,18 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", configuration); // Apply to all endpoints
         return source;
     }
+
+    @Bean
+    public AuthenticationManager authManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
+    }
+
+    @Bean
+    public DaoAuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider auth = new DaoAuthenticationProvider();
+        auth.setUserDetailsService(myUsersDetailsService);
+        auth.setPasswordEncoder(passwordEncoder());
+        return auth;
+    }
+
 }
