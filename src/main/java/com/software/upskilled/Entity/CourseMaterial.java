@@ -6,7 +6,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.util.Date;
-import java.util.Set;
 
 @Entity
 @Getter
@@ -14,7 +13,9 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Course {
+@Table(name = "coursematerial")
+public class CourseMaterial
+{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(nullable = false)
@@ -35,25 +36,14 @@ public class Course {
     private Date updatedAt;
 
     @Column
-    private String syllabusUrl;
+    private String courseMaterialUrl;
 
     @ManyToOne
     @JoinColumn(name = "instructor_id")
     private Users instructor;
 
-    /**
-     * One-to-many association of the course materials
-     * between the course and the materials associated with it
-     */
-    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL)
-    private Set<CourseMaterial> courseMaterials;
+    @ManyToOne
+    @JoinColumn(name="course_id")
+    private Course course;
 
-    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL)
-    private Set<Enrollment> enrollments;
-
-    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL)
-    private Set<Announcement> announcements;
-
-    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL)
-    private Set<Assignment> assignments;
 }

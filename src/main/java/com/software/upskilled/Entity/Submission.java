@@ -23,8 +23,9 @@ public class Submission {
     @Column(updatable = false, name = "submitted_at")
     private Date submittedAt;
 
-    @Column
-    private String status;  // "Submitted", "Graded", "Pending Review"
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Status status;// "Submitted", "Graded", "Pending Review"
 
     @ManyToOne
     @JoinColumn(name = "assignment_id", nullable = false)
@@ -36,4 +37,10 @@ public class Submission {
 
     @OneToOne(mappedBy = "submission", cascade = CascadeType.ALL)
     private Gradebook grade;
+
+    public enum Status {
+        SUBMITTED,
+        GRADED,
+        PENDING
+    }
 }
