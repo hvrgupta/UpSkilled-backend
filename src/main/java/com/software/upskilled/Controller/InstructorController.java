@@ -14,6 +14,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.ArrayList;
 import java.util.List;
@@ -685,5 +686,4 @@ public class InstructorController {
             return ResponseEntity.status(200).body("Failed to delete the existing course material, Please try again later" );
         }
     }
-
 }

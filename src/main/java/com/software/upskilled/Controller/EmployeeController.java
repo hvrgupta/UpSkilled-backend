@@ -7,6 +7,8 @@ import com.software.upskilled.Entity.CourseMaterial;
 import com.software.upskilled.Entity.Users;
 import com.software.upskilled.dto.AnnouncementDTO;
 import com.software.upskilled.dto.CourseMaterialDTO;
+import com.software.upskilled.dto.CourseDTO;
+import com.software.upskilled.dto.CourseInfoDTO;
 import com.software.upskilled.dto.CreateUserDTO;
 import com.software.upskilled.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
