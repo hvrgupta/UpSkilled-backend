@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -200,7 +201,8 @@ public class InstructorController {
 
     }
 
-    /*
+    /* Assignment's endpoint */
+
     @PostMapping("/{courseId}/assignment/create")
     public ResponseEntity<String> createAssignment(@PathVariable Long courseId,
                                                        @RequestBody Assignment assignment,Authentication authentication) {
@@ -216,6 +218,12 @@ public class InstructorController {
         Users instructor = userService.findUserByEmail(email);
 
         Course course = courseService.findCourseById(courseId);
+
+        if (assignment.getDeadline().before(new Date())) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body("The deadline must be a future date.");
+        }
 
         // Set course and creator (instructor)
         assignment.setCourse(course);
@@ -285,7 +293,6 @@ public class InstructorController {
 
         return ResponseEntity.ok("Assignment Deleted successfully");
     }
-    */
 
     @GetMapping("/{courseID}/{assignmentId}/submissions")
     public ResponseEntity<?> getAssignmentSubmissions(@PathVariable Long courseID, @PathVariable Long assignmentId, Authentication authentication)
@@ -569,5 +576,4 @@ public class InstructorController {
             return ResponseEntity.status(200).body("Failed to delete the existing course material, Please try again later" );
         }
     }
-
 }

@@ -50,28 +50,22 @@ public class AdminController {
         return userDTO;
     }
 
-    @GetMapping("/listActiveInstructors")
-    public ResponseEntity<List<CreateUserDTO>> getActiveInstructorsList() {
-        List<CreateUserDTO> instructorList;
-        instructorList = userService.getActiveInstructors().stream().map((instructor) -> {
-            CreateUserDTO userDTO = new CreateUserDTO();
-            userDTO.setEmail(instructor.getEmail());
-            userDTO.setRole(instructor.getRole());
-            userDTO.setPassword("*******");
-            userDTO.setFirstName(instructor.getFirstName());
-            userDTO.setLastName(instructor.getLastName());
-            userDTO.setDesignation(instructor.getDesignation());
-            userDTO.setId(instructor.getId());
-            userDTO.setStatus(instructor.getStatus());
-            return userDTO;
-        }).toList();
-        return ResponseEntity.ok(instructorList);
-    }
+    @GetMapping("/listInstructors")
+    public ResponseEntity<List<CreateUserDTO>> getInstructorsList() {
 
-    @GetMapping("/listInactiveInstructors")
-    public ResponseEntity<List<CreateUserDTO>> getInactiveInstructorsList() {
-        List<CreateUserDTO> instructorList;
-        instructorList = userService.getInactiveInstructors().stream().map((instructor) -> {
+        List<CreateUserDTO> instructorList = new ArrayList<>(userService.getInactiveInstructors().stream().map((instructor) -> {
+            CreateUserDTO userDTO = new CreateUserDTO();
+            userDTO.setEmail(instructor.getEmail());
+            userDTO.setRole(instructor.getRole());
+            userDTO.setPassword("*******");
+            userDTO.setFirstName(instructor.getFirstName());
+            userDTO.setLastName(instructor.getLastName());
+            userDTO.setDesignation(instructor.getDesignation());
+            userDTO.setId(instructor.getId());
+            userDTO.setStatus(instructor.getStatus());
+            return userDTO;
+        }).toList());
+        List<CreateUserDTO> activeInstructorList = userService.getActiveInstructors().stream().map((instructor) -> {
             CreateUserDTO userDTO = new CreateUserDTO();
             userDTO.setEmail(instructor.getEmail());
             userDTO.setRole(instructor.getRole());
@@ -83,12 +77,16 @@ public class AdminController {
             userDTO.setStatus(instructor.getStatus());
             return userDTO;
         }).toList();
+        if(instructorList.isEmpty()) {
+            return ResponseEntity.ok(activeInstructorList);
+        }
+        instructorList.addAll(activeInstructorList);
         return ResponseEntity.ok(instructorList);
     }
 
     @PostMapping("/approve/{instructorId}")
     public ResponseEntity<String> approveInstructor(@PathVariable Long instructorId) {
-        Users instructor = userService.findUserById(instructorId);
+          Users instructor = userService.findUserById(instructorId);
         if (instructor == null || !instructor.getRole().equals("INSTRUCTOR")) {
             return ResponseEntity.badRequest().body("Invalid instructor ID");
         }

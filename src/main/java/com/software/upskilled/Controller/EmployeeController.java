@@ -7,6 +7,8 @@ import com.software.upskilled.Entity.CourseMaterial;
 import com.software.upskilled.Entity.Users;
 import com.software.upskilled.dto.AnnouncementDTO;
 import com.software.upskilled.dto.CourseMaterialDTO;
+import com.software.upskilled.dto.CourseDTO;
+import com.software.upskilled.dto.CourseInfoDTO;
 import com.software.upskilled.dto.CreateUserDTO;
 import com.software.upskilled.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,6 +63,19 @@ public class EmployeeController {
         userDTO.setDesignation(user.getDesignation());
         userDTO.setStatus(user.getStatus());
         return userDTO;
+    }
+
+    @GetMapping("/courses")
+    public ResponseEntity<List<CourseInfoDTO>> viewCourses() {
+        CourseInfoDTO courseInfoDTO = new CourseInfoDTO();
+        return ResponseEntity.ok(courseService.getAllCourses().stream().map((course -> {
+            courseInfoDTO.setId(course.getId());
+            courseInfoDTO.setTitle(course.getTitle());
+            courseInfoDTO.setDescription(course.getDescription());
+            courseInfoDTO.setInstructorId(course.getInstructor().getId());
+            courseInfoDTO.setInstructorName(course.getInstructor().getFirstName() + " " + course.getInstructor().getLastName());
+            return courseInfoDTO;
+        })).collect(Collectors.toList()));
     }
 
     @PostMapping("/enroll")
