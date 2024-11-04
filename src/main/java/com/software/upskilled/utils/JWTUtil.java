@@ -15,7 +15,7 @@ import java.util.Map;
 @Service
 public class JWTUtil {
     private String secret; // Change this to a secure key
-    private long EXPIRATION_TIME = 1000 * 60 * 60; // 1 hour
+    private long EXPIRATION_TIME = 1000 * 60 * 60 * 24; // 1 hour
 
     @Value("${jwt.secret}")
     public void setSecret(String secret) {

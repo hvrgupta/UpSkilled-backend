@@ -59,15 +59,17 @@ public class EmployeeController {
 
     @GetMapping("/courses")
     public ResponseEntity<List<CourseInfoDTO>> viewCourses() {
-        CourseInfoDTO courseInfoDTO = new CourseInfoDTO();
-        return ResponseEntity.ok(courseService.getAllCourses().stream().map((course -> {
+
+        List<CourseInfoDTO> courseList =  courseService.getAllCourses().stream().map((course -> {
+            CourseInfoDTO courseInfoDTO = new CourseInfoDTO();
             courseInfoDTO.setId(course.getId());
             courseInfoDTO.setTitle(course.getTitle());
             courseInfoDTO.setDescription(course.getDescription());
             courseInfoDTO.setInstructorId(course.getInstructor().getId());
             courseInfoDTO.setInstructorName(course.getInstructor().getFirstName() + " " + course.getInstructor().getLastName());
             return courseInfoDTO;
-        })).collect(Collectors.toList()));
+        })).collect(Collectors.toList());
+        return ResponseEntity.ok(courseList);
     }
 
     @PostMapping("/enroll")
