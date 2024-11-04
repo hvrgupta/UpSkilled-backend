@@ -26,7 +26,7 @@ public class Gradebook {
     @Column(updatable = false, name = "graded_at")
     private Date gradedAt;
 
-    @ManyToOne
+    @OneToOne
     @JoinColumn(name = "submission_id", nullable = false)
     private Submission submission;  // Link to the assignment submission
 
