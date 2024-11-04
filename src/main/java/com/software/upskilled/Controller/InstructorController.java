@@ -1,11 +1,7 @@
 package com.software.upskilled.Controller;
 
-import com.software.upskilled.Entity.Announcement;
-import com.software.upskilled.Entity.Assignment;
-import com.software.upskilled.Entity.Course;
-import com.software.upskilled.Entity.Users;
-import com.software.upskilled.dto.AnnouncementDTO;
-import com.software.upskilled.dto.CreateUserDTO;
+import com.software.upskilled.Entity.*;
+import com.software.upskilled.dto.*;
 import com.software.upskilled.service.*;
 import com.software.upskilled.utils.InstructorCourseAuth;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +14,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -45,6 +42,16 @@ public class InstructorController {
 
     @Autowired
     private final InstructorCourseAuth instructorCourseAuth;
+
+    @Autowired
+    private final CourseMaterialService courseMaterialService;
+
+    @Autowired
+    private SubmissionService submissionService;
+
+    @Autowired
+    private GradeBookService gradeBookService;
+
 
     @GetMapping("/hello")
     public String hello(){
@@ -286,5 +293,396 @@ public class InstructorController {
         assignmentService.deleteAssignment(assignmentId);
 
         return ResponseEntity.ok("Assignment Deleted successfully");
+    }
+
+    @GetMapping("/{courseID}/{assignmentId}/submissions")
+    public ResponseEntity<?> getAssignmentSubmissions(@PathVariable Long courseID, @PathVariable Long assignmentId, Authentication authentication)
+    {
+        //Obtaining the email of the user from the authentication object
+        String email = authentication.getName();
+        //Obtaining the instructor details
+        Users instructor = userService.findUserByEmail(email);
+
+        Course course = courseService.findCourseById(courseID);
+
+        if (course == null ) {
+            return ResponseEntity.badRequest().body("Invalid course ID");
+        }
+
+        // Check if the instructor is assigned to this course, If not then an
+        //appropriate error message is thrown.
+        if (!course.getInstructor().getId().equals(instructor.getId()))
+        {
+            return ResponseEntity.status(403).body("You are not the instructor of this course");
+        }
+
+        //Get the Assignment details by passing the assignmentID
+        Assignment assignmentDetails = assignmentService.getAssignmentById( assignmentId );
+        //Check if the assignmentDetails is null
+        if( assignmentDetails == null ){
+            return ResponseEntity.badRequest().body("Assignment not found");
+        }
+        else
+        {
+            //Obtain the set of the submissions and send the details
+            Set<Submission> assignmentSubmissions = assignmentDetails.getSubmissions();
+            if( assignmentSubmissions.isEmpty() )
+                return ResponseEntity.status(200).body("No submissions yet for this assignment");
+            else
+            {
+                List<SubmissionResponseDTO> submissionResponseDTOList = new ArrayList<>();
+                assignmentSubmissions.forEach( assignmentSubmission -> {
+
+                    //Since, our Submission request is linked with other tables, we have to create DTO objects in order
+                    //felicitate the transfer of the data,Therefore creating the submission response DTO which will have
+                    //the necessary properties
+                    SubmissionResponseDTO submissionResponseDTO = new SubmissionResponseDTO();
+                    submissionResponseDTO.setSubmission_id( assignmentSubmission.getId() );
+                    submissionResponseDTO.setSubmission_url( assignmentSubmission.getSubmissionUrl() );
+                    submissionResponseDTO.setSubmission_at( assignmentSubmission.getSubmittedAt() );
+                    submissionResponseDTO.setSubmission_status( assignmentSubmission.getStatus() );
+
+                    //Creating the appropriate Assignment Response Details object as well
+                    AssignmentResponseDTO assignmentResponseDTO = new AssignmentResponseDTO();
+                    assignmentResponseDTO.setAssignmentID( assignmentDetails.getId() );
+                    assignmentResponseDTO.setAssignmentTitle( assignmentDetails.getTitle() );
+                    assignmentResponseDTO.setAssignmentDescription( assignmentDetails.getDescription() );
+                    assignmentResponseDTO.setAssignmentDeadline( assignmentDetails.getDeadline() );
+
+                    //Setting the assignment details in the submission response
+                    submissionResponseDTO.setAssignmentResponseDTO( assignmentResponseDTO );
+                });
+                return ResponseEntity.ok(submissionResponseDTOList);
+            }
+
+        }
+    }
+
+    @GetMapping("/{courseID}/assignments/{assignmentId}/submissions/{submissionID}")
+    public ResponseEntity<?> viewParticularAssignmentSubmission(@PathVariable Long assignmentId, @PathVariable Long courseID, @PathVariable Long submissionID, Authentication authentication){
+
+        //Obtaining the email of the user from the authentication object
+        String email = authentication.getName();
+        //Obtaining the instructor details
+        Users instructor = userService.findUserByEmail(email);
+
+        Course course = courseService.findCourseById(courseID);
+
+        if (course == null ) {
+            return ResponseEntity.badRequest().body("Invalid course ID");
+        }
+
+        //Checking if the instructor is assigned to this course, If not then an
+        //appropriate error message is thrown.
+        if (!course.getInstructor().getId().equals(instructor.getId()))
+        {
+            return ResponseEntity.status(403).body("You are not the instructor of this course and hence not authorized to perform this operation");
+        }
+
+        //Get the submission details associated with the ID
+        Submission uploadedSubmissionDetails = submissionService.getSubmissionByID( submissionID );
+        if( uploadedSubmissionDetails == null )
+            return ResponseEntity.badRequest().body("Submission not found");
+        else
+        {
+            return new ResponseEntity<>( fileService.viewAssignmentSubmission( uploadedSubmissionDetails.getSubmissionUrl() ), HttpStatus.OK );
+        }
+    }
+
+    @GetMapping("/{courseID}/assignments/{assignmentId}/submissions/{submissionID}/GradeBook/getGradeBook")
+    public ResponseEntity<?> getParticularSubmissionGradeBook(@PathVariable Long assignmentId, @PathVariable Long courseID, @PathVariable Long submissionID, Authentication authentication){
+        //Obtaining the email of the user from the authentication object
+        String email = authentication.getName();
+        //Obtaining the instructor details
+        Users instructor = userService.findUserByEmail(email);
+
+        Course course = courseService.findCourseById(courseID);
+
+        if (course == null ) {
+            return ResponseEntity.badRequest().body("Invalid course ID");
+        }
+
+        //Checking if the instructor is assigned to this course, If not then an
+        //appropriate error message is thrown.
+        if (!course.getInstructor().getId().equals(instructor.getId()))
+        {
+            return ResponseEntity.status(403).body("You are not the instructor of this course and hence not authorized to perform this operation");
+        }
+        //Get the submission details associated with the ID
+        Submission uploadedSubmissionDetails = submissionService.getSubmissionByID( submissionID );
+        if( uploadedSubmissionDetails == null )
+            return ResponseEntity.badRequest().body("Submission not found");
+        else
+        {
+            Gradebook gradeBookDetails = uploadedSubmissionDetails.getGrade();
+            if( gradeBookDetails == null )
+                return ResponseEntity.status(200).body("No Grades/Feedback available for this submission yet");
+            else
+            {
+                //Creating the GradeBook Response DTO
+                GradeBookResponseDTO gradeBookResponseDTO = new GradeBookResponseDTO();
+                gradeBookResponseDTO.setGrade( gradeBookDetails.getGrade() );
+                gradeBookResponseDTO.setFeedback( gradeBookDetails.getFeedback() );
+                gradeBookResponseDTO.setGradedDate( gradeBookDetails.getGradedAt() );
+
+                //Creating the instructor DTO object properties
+                CreateUserDTO instructorDTO = new CreateUserDTO();
+
+                instructorDTO.setId(instructor.getId() );
+                instructorDTO.setFirstName(instructorDTO.getFirstName() );
+                instructorDTO.setLastName(instructorDTO.getLastName() );
+                gradeBookResponseDTO.setInstructorDTO( instructorDTO );
+
+                //Since, our Submission request is linked with other tables, we have to create DTO objects in order
+                //felicitate the transfer of the data,Therefore creating the submission response DTO which will have
+                //the necessary properties
+                SubmissionResponseDTO submissionResponseDTO = new SubmissionResponseDTO();
+                submissionResponseDTO.setSubmission_id( uploadedSubmissionDetails.getId() );
+                submissionResponseDTO.setSubmission_url( uploadedSubmissionDetails.getSubmissionUrl() );
+                submissionResponseDTO.setSubmission_at( uploadedSubmissionDetails.getSubmittedAt() );
+                submissionResponseDTO.setSubmission_status( uploadedSubmissionDetails.getStatus() );
+
+                //Creating the appropriate Assignment Response Details object as well
+                AssignmentResponseDTO assignmentResponseDTO = new AssignmentResponseDTO();
+                assignmentResponseDTO.setAssignmentID( uploadedSubmissionDetails.getAssignment().getId() );
+                assignmentResponseDTO.setAssignmentTitle( uploadedSubmissionDetails.getAssignment().getTitle() );
+                assignmentResponseDTO.setAssignmentDescription( uploadedSubmissionDetails.getAssignment().getDescription() );
+                assignmentResponseDTO.setAssignmentDeadline( uploadedSubmissionDetails.getAssignment().getDeadline() );
+
+                //Setting the assignment response DTO in the submission response and then submitting the submission
+                //response in the GradeBook DTO
+                submissionResponseDTO.setAssignmentResponseDTO( assignmentResponseDTO );
+                gradeBookResponseDTO.setSubmissionResponseDTO( submissionResponseDTO );
+
+                return ResponseEntity.ok( gradeBookResponseDTO );
+
+            }
+        }
+
+    }
+
+    @PostMapping("/{courseID}/assignments/{assignmentId}/submissions/{submissionID}/GradeBook/GradeAssignment")
+    public ResponseEntity<?> submitGradesToGradeBook(@PathVariable Long assignmentId, @PathVariable Long courseID,
+                                                     @PathVariable Long submissionID, Authentication authentication, @RequestBody GradeBookRequestDTO gradingDetails)
+    {
+        //Obtaining the email of the user from the authentication object
+        String email = authentication.getName();
+        //Obtaining the instructor details
+        Users instructor = userService.findUserByEmail(email);
+
+        Course course = courseService.findCourseById(courseID);
+
+        if (course == null ) {
+            return ResponseEntity.badRequest().body("Invalid course ID");
+        }
+
+        //Checking if the instructor is assigned to this course, If not then an
+        //appropriate error message is thrown.
+        if (!course.getInstructor().getId().equals(instructor.getId()))
+        {
+            return ResponseEntity.status(403).body("You are not the instructor of this course and hence not authorized to perform this operation");
+        }
+        //Get the submission details associated with the ID
+        Submission uploadedSubmissionDetails = submissionService.getSubmissionByID( submissionID );
+        if( uploadedSubmissionDetails == null )
+            return ResponseEntity.badRequest().body("Submission not found");
+        else
+        {
+            Gradebook gradeBookDetails = uploadedSubmissionDetails.getGrade();
+            if( gradeBookDetails != null )
+                return ResponseEntity.badRequest().body("Grades already exist for this particular submission");
+            else{
+
+                //Construct the new GradeBook object so that it can the submission can be saved
+                Gradebook gradeBookSubmission = Gradebook.builder().
+                        grade( gradingDetails.getGrade() ).
+                        feedback(gradingDetails.getFeedback() )
+                        .submission( uploadedSubmissionDetails )
+                        .instructor(instructor).build();
+
+                //Provide the GradeBook submission to the GradeBook service so that it can be stored in the database
+                gradeBookService.saveGradeBookSubmission( gradeBookSubmission );
+                return ResponseEntity.ok( gradeBookSubmission );
+
+            }
+        }
+    }
+
+
+
+    @PostMapping("/uploadCourseMaterial/{courseId}")
+    public ResponseEntity<?> uploadCourseMaterial(@RequestParam("file") MultipartFile file, @PathVariable Long courseId,
+                                                  @RequestParam("materialTitle") String courseMaterialTitle,
+                                                  @RequestParam("materialDescription") String courseMaterialDescription,
+                                                  Authentication authentication) {
+
+        if (!Objects.equals(file.getContentType(), "application/pdf")) {
+            return ResponseEntity.badRequest().body("Only PDF Files are allowed.");
+        }
+
+        String email = authentication.getName();
+
+        Users instructor = userService.findUserByEmail(email);
+
+        Course course = courseService.findCourseById(courseId);
+
+        if (course == null) {
+            return ResponseEntity.badRequest().body("Invalid course ID");
+        }
+
+        // Check if the instructor is assigned to this course
+        if (!course.getInstructor().getId().equals(instructor.getId()))
+        {
+            return ResponseEntity.status(403).body("You are not the instructor of this course");
+        }
+
+        String instructorName = instructor.getFirstName()+"_"+instructor.getLastName()+"_"+instructor.getId();
+        String courseTitle = course.getTitle()+"_"+course.getId();
+
+        CourseMaterialDTO courseMaterialDetails= CourseMaterialDTO.builder()
+                .materialTitle( courseMaterialTitle )
+                .materialDescription( courseMaterialDescription )
+                .build();
+        //System.out.println( courseMaterialDetails );
+
+        return new ResponseEntity<>(fileService.uploadCourseMaterial( file, instructorName, courseTitle, courseMaterialDetails), HttpStatus.OK);
+    }
+
+    @GetMapping("/getCourseMaterials/{courseId}")
+    public ResponseEntity<?> getAllCourseMaterials(@PathVariable Long courseId, Authentication authentication)
+    {
+        String email = authentication.getName();
+        Users employee = userService.findUserByEmail(email);
+
+        Course course = courseService.findCourseById(courseId);
+
+        if (course == null) {
+            return ResponseEntity.badRequest().body("Invalid course ID");
+        }
+
+        //Check if the user is the actual instructor of the course by checking the ID of the instructor of the course
+        //If the user is not the instructor, then it throws a 404 error
+        if (!course.getInstructor().getId().equals(employee.getId())) {
+            return ResponseEntity.status(403).body("You are not enrolled in this course as an instructor");
+        }
+
+        Set<CourseMaterial> courseMaterials = course.getCourseMaterials();
+
+        if( courseMaterials.isEmpty() )
+            return ResponseEntity.status(404).body("No Course Materials have been uploaded yet for this course");
+        else
+        {
+            List<CourseMaterialDTO> courseMaterialDTOList = new ArrayList<>();
+            courseMaterials.forEach(courseMaterial-> courseMaterialDTOList.add( CourseMaterialDTO.builder().
+                    materialTitle( courseMaterial.getTitle() )
+                    .materialDescription(courseMaterial.getDescription() ).build()));
+            return ResponseEntity.ok(courseMaterialDTOList);
+        }
+    }
+
+    @GetMapping("/getCourseMaterial/{courseId}/{materialTitle}")
+    public ResponseEntity<?> getAllCourseMaterials(@PathVariable Long courseId, @PathVariable("materialTitle") String courseMaterialTitle, Authentication authentication)
+    {
+        String email = authentication.getName();
+        Users employee = userService.findUserByEmail(email);
+
+        Course course = courseService.findCourseById(courseId);
+
+        if (course == null) {
+            return ResponseEntity.badRequest().body("Invalid course ID");
+        }
+
+        //Check if the user is the actual instructor of the course by checking the ID of the instructor of the course
+        //If the user is not the instructor, then it throws a 404 error
+        if (!course.getInstructor().getId().equals(employee.getId())) {
+            return ResponseEntity.status(403).body("You are not enrolled in this course as an instructor");
+        }
+
+        //Fetch the corresponding course material details
+        CourseMaterial courseMaterial = courseMaterialService.getCourseMaterialByTitle( courseMaterialTitle.strip() );
+
+        return new ResponseEntity<>(fileService.viewCourseMaterial( courseMaterial.getCourseMaterialUrl() ), HttpStatus.OK);
+
+    }
+
+    @PutMapping("/updateCourseMaterial/{courseId}/{currentMaterialTitle}")
+    public ResponseEntity<?> updateCourseMaterial(@RequestParam("file") MultipartFile file, @PathVariable Long courseId,
+                                                  @RequestParam("newMaterialTitle") String courseMaterialTitle,
+                                                  @RequestParam("newMaterialDescription") String courseMaterialDescription,
+                                                  @RequestParam("currentMaterialTitle") String existingCourseMaterialTitle,
+                                                  Authentication authentication)
+    {
+        String email = authentication.getName();
+        Users instructor = userService.findUserByEmail(email);
+
+        Course course = courseService.findCourseById(courseId);
+
+        if (course == null) {
+            return ResponseEntity.badRequest().body("Invalid course ID");
+        }
+
+        //Check if the user is the actual instructor of the course by checking the ID of the instructor of the course
+        //If the user is not the instructor, then it throws a 404 error
+        if (!course.getInstructor().getId().equals(instructor.getId())) {
+            return ResponseEntity.status(403).body("You are not authorized to perform this operation");
+        }
+        //Fetch the corresponding course material details
+        CourseMaterial existingCourseMaterial = courseMaterialService.getCourseMaterialByTitle( existingCourseMaterialTitle.strip() );
+
+        String instructorData = instructor.getFirstName()+"_"+instructor.getLastName()+"_"+instructor.getId();
+        String courseData = course.getTitle()+"_"+course.getId();
+
+        //Try deleting the existing file first before removing the file
+        boolean isExistingCourseMaterialDeleted = fileService.deleteCourseMaterial( existingCourseMaterial.getCourseMaterialUrl() ).isDeletionSuccessfull();
+        System.out.println( "Deletion Status of existing course material " + isExistingCourseMaterialDeleted );
+
+        //If the existing course material has been deleted then we proceed to upload the new material.
+        if( isExistingCourseMaterialDeleted )
+        {
+            CourseMaterialDTO newCourseMaterialDTO= CourseMaterialDTO.builder()
+                    .materialTitle( courseMaterialTitle )
+                    .materialDescription( courseMaterialDescription )
+                    .build();
+            return new ResponseEntity<>(fileService.updateCourseMaterial( file, instructorData, courseData, newCourseMaterialDTO, existingCourseMaterial ), HttpStatus.OK);
+
+        }
+        else
+        {
+            return ResponseEntity.status(200).body("Failed to delete the existing course material, Please try again later" );
+        }
+    }
+
+    @DeleteMapping("/deleteCourseMaterial/{courseId}/{materialTitle}")
+    public ResponseEntity<?> deleteCourseMaterial(@PathVariable Long courseId, @PathVariable("materialTitle") String courseMaterialTitle, Authentication authentication)
+    {
+        String email = authentication.getName();
+        Users employee = userService.findUserByEmail(email);
+
+        Course course = courseService.findCourseById(courseId);
+
+        if (course == null) {
+            return ResponseEntity.badRequest().body("Invalid course ID");
+        }
+
+        //Check if the user is the actual instructor of the course by checking the ID of the instructor of the course
+        //If the user is not the instructor, then it throws a 404 error
+        if (!course.getInstructor().getId().equals(employee.getId())) {
+            return ResponseEntity.status(403).body("You are not authorized to perform this operation");
+        }
+
+        //Fetch the corresponding course material details
+        CourseMaterial courseMaterial = courseMaterialService.getCourseMaterialByTitle( courseMaterialTitle.strip() );
+
+        //Try deleting the existing file first before removing the file
+        boolean isExistingCourseMaterialDeleted = fileService.deleteCourseMaterial( courseMaterial.getCourseMaterialUrl() ).isDeletionSuccessfull();
+
+        if(  isExistingCourseMaterialDeleted )
+        {
+            return ResponseEntity.status(200).body("Course Material successfully removed from cloud storage");
+        }
+        else
+        {
+            return ResponseEntity.status(200).body("Failed to delete the existing course material, Please try again later" );
+        }
     }
 }
