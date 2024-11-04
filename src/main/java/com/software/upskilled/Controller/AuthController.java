@@ -1,12 +1,18 @@
 package com.software.upskilled.Controller;
 
 import com.software.upskilled.Entity.Users;
+import com.software.upskilled.dto.AuthRequest;
 import com.software.upskilled.dto.CreateUserDTO;
 import com.software.upskilled.service.UserService;
+import com.software.upskilled.utils.JWTUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,6 +22,12 @@ public class AuthController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private JWTUtil jwtUtil;
 
     @GetMapping("/user")
     public CreateUserDTO getCurrentUser(@AuthenticationPrincipal Users user) {
@@ -56,5 +68,23 @@ public class AuthController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Registration failed : " + e.getMessage());
         }
+    }
+
+
+    @PostMapping("/login")
+    public String login(@RequestBody AuthRequest authRequest) throws Exception {
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(authRequest.getEmail(), authRequest.getPassword())
+            );
+            if(authentication.isAuthenticated()) {
+//                UserDetails userDetails = userService.loadUserByUsername(authRequest.getEmail());
+                return jwtUtil.generateToken(authRequest.getEmail());
+            }
+
+        } catch (Exception e) {
+            throw new Exception("Invalid username or password", e);
+        }
+        return "";
     }
 }
