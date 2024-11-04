@@ -33,7 +33,7 @@ import java.util.Arrays;
 public class FileServiceImpl implements FileService {
 
     @Value("${aws.s3.bucketName}")
-    private String bucketName;
+    private String syllabusBucketName;
 
     @Value("${aws.s3.course-materials-bucketName}")
     private String courseMaterialsBucketName;
@@ -81,7 +81,7 @@ public class FileServiceImpl implements FileService {
             objectMetadata.setContentType(multipartFile.getContentType());
             objectMetadata.setContentLength(multipartFile.getSize());
             filePath = "syllabus/"+ course.getTitle() + "/" + multipartFile.getOriginalFilename();
-            s3Client.putObject(bucketName, filePath, multipartFile.getInputStream(), objectMetadata);
+            s3Client.putObject(syllabusBucketName, filePath, multipartFile.getInputStream(), objectMetadata);
             fileUploadResponse.setFilePath(filePath);
             fileUploadResponse.setDateTime(LocalDateTime.now());
             course.setSyllabusUrl(filePath);
@@ -227,7 +227,6 @@ public class FileServiceImpl implements FileService {
     }
 
 
-
     @Override
     public FileDeletionResponse deleteCourseMaterial(String courseMaterialURL) {
         try {
@@ -248,6 +247,8 @@ public class FileServiceImpl implements FileService {
             throw new IllegalStateException("Failed to delete the file", e);
         }
     }
+
+//    View buckets
 
     @Override
     public byte[] viewCourseMaterial( String courseMaterialURL)
@@ -270,7 +271,7 @@ public class FileServiceImpl implements FileService {
         Course course = courseService.findCourseById(courseId);
 
         try {
-            S3Object object = s3Client.getObject(bucketName,course.getSyllabusUrl());
+            S3Object object = s3Client.getObject(syllabusBucketName,course.getSyllabusUrl());
             S3ObjectInputStream objectContent = object.getObjectContent();
 
             return IOUtils.toByteArray(objectContent);
