@@ -5,11 +5,7 @@ import com.software.upskilled.Entity.Announcement;
 import com.software.upskilled.Entity.Course;
 import com.software.upskilled.Entity.CourseMaterial;
 import com.software.upskilled.Entity.Users;
-import com.software.upskilled.dto.AnnouncementDTO;
-import com.software.upskilled.dto.CourseMaterialDTO;
-import com.software.upskilled.dto.CourseDTO;
-import com.software.upskilled.dto.CourseInfoDTO;
-import com.software.upskilled.dto.CreateUserDTO;
+import com.software.upskilled.dto.*;
 import com.software.upskilled.service.*;
 import com.software.upskilled.utils.EmployeeCourseAuth;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -138,11 +134,39 @@ public class EmployeeController {
         // Fetch and return the announcements
         Set<Announcement> announcements = announcementService.getAnnouncementsByCourseId(courseId);
 
-        List<AnnouncementDTO> announcementDTOs = announcements.stream()
-                .map(announcement -> new AnnouncementDTO(announcement.getId(),announcement.getTitle(), announcement.getContent()))
+        List<AnnouncementRequestDTO> announcementDTOs = announcements.stream()
+                .map(announcement -> new AnnouncementRequestDTO(announcement.getId(),announcement.getTitle(), announcement.getContent(), announcement.getUpdatedAt()))
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(announcementDTOs);
+    }
+
+    @GetMapping("/getAnnouncementById/{id}")
+    public ResponseEntity<?> getAnnouncementById(
+            @PathVariable Long id, Authentication authentication) {
+
+        Announcement announcement = announcementService.findAnnouncementById(id);
+
+        if (announcement == null) {
+            return ResponseEntity.badRequest().body("Announcement not found");
+        }
+
+        Course course = announcement.getCourse();
+
+        ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(course.getId(), authentication);
+
+        if (authResponse != null) {
+            return authResponse;
+        }
+
+        AnnouncementRequestDTO announcementDTO = new AnnouncementRequestDTO();
+        announcementDTO.setId(announcement.getId());
+        announcementDTO.setContent(announcement.getContent());
+        announcementDTO.setTitle(announcement.getTitle());
+        announcementDTO.setUpdatedAt(announcement.getUpdatedAt());
+
+        return ResponseEntity.ok(announcementDTO);
+
     }
 
     // Endpoint to view the syllabus for a course
@@ -219,4 +243,6 @@ public class EmployeeController {
         return new ResponseEntity<>(fileService.viewCourseMaterial( courseMaterial.getCourseMaterialUrl() ), HttpStatus.OK);
 
     }
+
+
 }
