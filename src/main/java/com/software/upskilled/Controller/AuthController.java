@@ -70,7 +70,6 @@ public class AuthController {
         }
     }
 
-
     @PostMapping("/login")
     public String login(@RequestBody AuthRequest authRequest) throws Exception {
         try {
@@ -78,8 +77,7 @@ public class AuthController {
                     new UsernamePasswordAuthenticationToken(authRequest.getEmail(), authRequest.getPassword())
             );
             if(authentication.isAuthenticated()) {
-//                UserDetails userDetails = usersDetailsService.loadUserByUsername(authRequest.getEmail());
-                 Users user = usersDetailsService.findUserByEmail(authRequest.getEmail());
+                Users user = usersDetailsService.findUserByEmail(authRequest.getEmail());
                 return jwtUtil.generateToken(user.getEmail(),user.getFirstName(),user.getLastName(),user.getRole(),user.getStatus());
             }
 

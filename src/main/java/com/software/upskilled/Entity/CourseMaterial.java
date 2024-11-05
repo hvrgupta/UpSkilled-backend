@@ -24,7 +24,7 @@ public class CourseMaterial
     @Column(unique = true, nullable = false)
     private String title;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 5000)
     private String description;
 
     @CreationTimestamp
@@ -35,7 +35,7 @@ public class CourseMaterial
     @Column(name = "updated_at")
     private Date updatedAt;
 
-    @Column
+    @Column(length = 5000)
     private String courseMaterialUrl;
 
     @ManyToOne

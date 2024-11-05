@@ -19,7 +19,7 @@ public class Gradebook {
     @Column(nullable = false)
     private Integer grade;  // Grade for the submission, e.g., 0-100
 
-    @Column
+    @Column(length = 5000)
     private String feedback;  // Optional feedback for the submission
 
     @CreationTimestamp

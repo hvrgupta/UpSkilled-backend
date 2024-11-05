@@ -24,7 +24,7 @@ public class Message {
     @JoinColumn(name = "recipient_id", nullable = false)
     private Users recipient;  // Recipient of the message
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 5000)
     private String content;  // Message content
 
     @CreationTimestamp
