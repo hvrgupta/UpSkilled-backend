@@ -89,8 +89,8 @@ public class InstructorController {
         Set<Announcement> announcements = announcementService.getAnnouncementsByCourseId(courseId);
 
         // Convert announcements to AnnouncementDTO
-        List<AnnouncementDTO> announcementDTOs = announcements.stream()
-                .map(announcement -> new AnnouncementDTO(announcement.getId(),announcement.getTitle(), announcement.getContent()))
+        List<AnnouncementRequestDTO> announcementDTOs = announcements.stream()
+                .map(announcement -> new AnnouncementRequestDTO(announcement.getId(),announcement.getTitle(), announcement.getContent(),announcement.getUpdatedAt()))
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(announcementDTOs);
@@ -119,6 +119,34 @@ public class InstructorController {
         announcementService.saveAnnouncement(announcement);
 
         return ResponseEntity.ok("Announcement created successfully");
+    }
+
+    @GetMapping("/getAnnouncementById/{id}")
+    public ResponseEntity<?> getAnnouncementById(
+            @PathVariable Long id, Authentication authentication) {
+
+        Announcement announcement = announcementService.findAnnouncementById(id);
+
+        if (announcement == null) {
+            return ResponseEntity.badRequest().body("Announcement not found");
+        }
+
+        Course course = announcement.getCourse();
+
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(course.getId(), authentication);
+
+        if (authResponse != null) {
+            return authResponse;
+        }
+
+        AnnouncementRequestDTO announcementDTO = new AnnouncementRequestDTO();
+        announcementDTO.setId(announcement.getId());
+        announcementDTO.setContent(announcement.getContent());
+        announcementDTO.setTitle(announcement.getTitle());
+        announcementDTO.setUpdatedAt(announcement.getUpdatedAt());
+
+        return ResponseEntity.ok(announcementDTO);
+
     }
 
     // Edit an existing announcement
