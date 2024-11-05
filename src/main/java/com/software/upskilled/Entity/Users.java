@@ -53,27 +53,28 @@ public class Users implements UserDetails {
     private String designation;     // User's designation
 
 //  Course this user teaches
-    @OneToMany(mappedBy = "instructor")
+    @OneToMany(mappedBy = "instructor",fetch = FetchType.LAZY)
     private Set<Course> coursesTaught;
 
 //  Enrollment where this user is an
-    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL,fetch = FetchType.LAZY)
     private Set<Enrollment> enrollments;
 
 //  Submissions by employee
-    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL,fetch = FetchType.LAZY)
     private Set<Submission> submissions;
 
 //   Grades given by instructor
-    @OneToMany(mappedBy = "instructor", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "instructor", cascade = CascadeType.ALL,fetch = FetchType.LAZY)
     private Set<Gradebook> gradesGiven;
 
 //  Messages sent
-    @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "sender",fetch = FetchType.LAZY)
     private Set<Message> messagesSent;
 
 //  Messages received
-    @OneToMany(mappedBy = "recipient", cascade = CascadeType.ALL)
+
+    @OneToMany(mappedBy = "recipient",fetch = FetchType.LAZY)
     private Set<Message> messagesReceived;
 
     @Override
@@ -104,7 +105,7 @@ public class Users implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return this.status == Status.ACTIVE;
     }
 
     public enum Status {

@@ -7,11 +7,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/public")
 public class PublicController {
-
     @GetMapping("/hello")
     public String hello(){
         return "Hello Public";
     }
-
 
 }

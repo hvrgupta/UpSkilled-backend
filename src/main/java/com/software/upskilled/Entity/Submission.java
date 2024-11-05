@@ -16,7 +16,7 @@ public class Submission {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 5000)
     private String submissionUrl;  // URL or file path of the uploaded assignment
 
     @CreationTimestamp

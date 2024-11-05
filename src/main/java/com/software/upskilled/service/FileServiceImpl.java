@@ -80,10 +80,11 @@ public class FileServiceImpl implements FileService {
             ObjectMetadata objectMetadata = new ObjectMetadata();
             objectMetadata.setContentType(multipartFile.getContentType());
             objectMetadata.setContentLength(multipartFile.getSize());
-            filePath = "syllabus/"+ course.getTitle() + "/" + multipartFile.getOriginalFilename();
+            filePath = course.getTitle() + "/" + multipartFile.getOriginalFilename();
             s3Client.putObject(syllabusBucketName, filePath, multipartFile.getInputStream(), objectMetadata);
             fileUploadResponse.setFilePath(filePath);
             fileUploadResponse.setDateTime(LocalDateTime.now());
+
             course.setSyllabusUrl(filePath);
             courseService.saveCourse(course);
         } catch (IOException e) {

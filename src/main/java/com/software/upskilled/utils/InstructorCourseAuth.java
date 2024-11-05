@@ -27,7 +27,7 @@ public class InstructorCourseAuth {
 
         Course course = courseService.findCourseById(courseId);
 
-        if(instructor.getStatus().equals(Users.Status.INACTIVE)) {
+        if(instructor.getStatus().equals(Users.Status.INACTIVE) || instructor.getStatus().equals(Users.Status.REJECTED)) {
             return ResponseEntity.badRequest().body("Instructor not yet ACTIVE.");
         }
 

@@ -8,12 +8,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -193,11 +195,13 @@ public class InstructorController {
 
         final byte[] data = fileService.viewSyllabus(courseId);
         final ByteArrayResource resource = new ByteArrayResource(data);
+
+
         return ResponseEntity
                 .ok()
                 .contentLength(data.length)
-                .header("Content-type", "application/octet-stream")
                 .header("Content-disposition", "attachment; filename=\"" + syllabusUrl + "\"")
+                .contentType(MediaType.APPLICATION_PDF)
                 .body(resource);
 
     }
@@ -220,7 +224,9 @@ public class InstructorController {
 
         Course course = courseService.findCourseById(courseId);
 
-        if (assignment.getDeadline().before(new Date())) {
+        long currentEpoch = System.currentTimeMillis();
+
+        if (currentEpoch > assignment.getDeadline()) {
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
                     .body("The deadline must be a future date.");
@@ -258,11 +264,15 @@ public class InstructorController {
             return ResponseEntity.status(403).body("This assignment doesn't belongs to the course");
         }
 
+        if(updatedAssignment.getTitle().isEmpty() || updatedAssignment.getDescription().isEmpty() || updatedAssignment.getDeadline() == null) {
+            return ResponseEntity.badRequest().body("Title, description or deadline missing!");
+        }
+
         existingAssignment.setTitle(updatedAssignment.getTitle());
         existingAssignment.setDescription(updatedAssignment.getDescription());
         existingAssignment.setDeadline(updatedAssignment.getDeadline());
 
-        Assignment savedAssignment = assignmentService.updateAssignment(existingAssignment);
+        assignmentService.updateAssignment(existingAssignment);
         return ResponseEntity.ok("Assignment updated successfully");
     }
 
@@ -298,22 +308,10 @@ public class InstructorController {
     @GetMapping("/{courseID}/{assignmentId}/submissions")
     public ResponseEntity<?> getAssignmentSubmissions(@PathVariable Long courseID, @PathVariable Long assignmentId, Authentication authentication)
     {
-        //Obtaining the email of the user from the authentication object
-        String email = authentication.getName();
-        //Obtaining the instructor details
-        Users instructor = userService.findUserByEmail(email);
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseID, authentication);
 
-        Course course = courseService.findCourseById(courseID);
-
-        if (course == null ) {
-            return ResponseEntity.badRequest().body("Invalid course ID");
-        }
-
-        // Check if the instructor is assigned to this course, If not then an
-        //appropriate error message is thrown.
-        if (!course.getInstructor().getId().equals(instructor.getId()))
-        {
-            return ResponseEntity.status(403).body("You are not the instructor of this course");
+        if (authResponse != null) {
+            return authResponse;
         }
 
         //Get the Assignment details by passing the assignmentID
@@ -347,7 +345,7 @@ public class InstructorController {
                     assignmentResponseDTO.setAssignmentID( assignmentDetails.getId() );
                     assignmentResponseDTO.setAssignmentTitle( assignmentDetails.getTitle() );
                     assignmentResponseDTO.setAssignmentDescription( assignmentDetails.getDescription() );
-                    assignmentResponseDTO.setAssignmentDeadline( assignmentDetails.getDeadline() );
+                    assignmentResponseDTO.setAssignmentDeadline(assignmentDetails.getDeadline() );
 
                     //Setting the assignment details in the submission response
                     submissionResponseDTO.setAssignmentResponseDTO( assignmentResponseDTO );
@@ -361,22 +359,10 @@ public class InstructorController {
     @GetMapping("/{courseID}/assignments/{assignmentId}/submissions/{submissionID}")
     public ResponseEntity<?> viewParticularAssignmentSubmission(@PathVariable Long assignmentId, @PathVariable Long courseID, @PathVariable Long submissionID, Authentication authentication){
 
-        //Obtaining the email of the user from the authentication object
-        String email = authentication.getName();
-        //Obtaining the instructor details
-        Users instructor = userService.findUserByEmail(email);
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseID, authentication);
 
-        Course course = courseService.findCourseById(courseID);
-
-        if (course == null ) {
-            return ResponseEntity.badRequest().body("Invalid course ID");
-        }
-
-        //Checking if the instructor is assigned to this course, If not then an
-        //appropriate error message is thrown.
-        if (!course.getInstructor().getId().equals(instructor.getId()))
-        {
-            return ResponseEntity.status(403).body("You are not the instructor of this course and hence not authorized to perform this operation");
+        if (authResponse != null) {
+            return authResponse;
         }
 
         //Get the submission details associated with the ID
@@ -396,18 +382,12 @@ public class InstructorController {
         //Obtaining the instructor details
         Users instructor = userService.findUserByEmail(email);
 
-        Course course = courseService.findCourseById(courseID);
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseID, authentication);
 
-        if (course == null ) {
-            return ResponseEntity.badRequest().body("Invalid course ID");
+        if (authResponse != null) {
+            return authResponse;
         }
 
-        //Checking if the instructor is assigned to this course, If not then an
-        //appropriate error message is thrown.
-        if (!course.getInstructor().getId().equals(instructor.getId()))
-        {
-            return ResponseEntity.status(403).body("You are not the instructor of this course and hence not authorized to perform this operation");
-        }
         //Get the submission details associated with the ID
         Submission uploadedSubmissionDetails = submissionService.getSubmissionByID( submissionID );
         if( uploadedSubmissionDetails == null )
@@ -470,18 +450,12 @@ public class InstructorController {
         //Obtaining the instructor details
         Users instructor = userService.findUserByEmail(email);
 
-        Course course = courseService.findCourseById(courseID);
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseID, authentication);
 
-        if (course == null ) {
-            return ResponseEntity.badRequest().body("Invalid course ID");
+        if (authResponse != null) {
+            return authResponse;
         }
 
-        //Checking if the instructor is assigned to this course, If not then an
-        //appropriate error message is thrown.
-        if (!course.getInstructor().getId().equals(instructor.getId()))
-        {
-            return ResponseEntity.status(403).body("You are not the instructor of this course and hence not authorized to perform this operation");
-        }
         //Get the submission details associated with the ID
         Submission uploadedSubmissionDetails = submissionService.getSubmissionByID( submissionID );
         if( uploadedSubmissionDetails == null )
@@ -508,8 +482,6 @@ public class InstructorController {
         }
     }
 
-
-
     @PostMapping("/uploadCourseMaterial/{courseId}")
     public ResponseEntity<?> uploadCourseMaterial(@RequestParam("file") MultipartFile file, @PathVariable Long courseId,
                                                   @RequestParam("materialTitle") String courseMaterialTitle,
@@ -526,14 +498,10 @@ public class InstructorController {
 
         Course course = courseService.findCourseById(courseId);
 
-        if (course == null) {
-            return ResponseEntity.badRequest().body("Invalid course ID");
-        }
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseId, authentication);
 
-        // Check if the instructor is assigned to this course
-        if (!course.getInstructor().getId().equals(instructor.getId()))
-        {
-            return ResponseEntity.status(403).body("You are not the instructor of this course");
+        if (authResponse != null) {
+            return authResponse;
         }
 
         String instructorName = instructor.getFirstName()+"_"+instructor.getLastName()+"_"+instructor.getId();
@@ -543,7 +511,6 @@ public class InstructorController {
                 .materialTitle( courseMaterialTitle )
                 .materialDescription( courseMaterialDescription )
                 .build();
-        //System.out.println( courseMaterialDetails );
 
         return new ResponseEntity<>(fileService.uploadCourseMaterial( file, instructorName, courseTitle, courseMaterialDetails), HttpStatus.OK);
     }
@@ -552,18 +519,13 @@ public class InstructorController {
     public ResponseEntity<?> getAllCourseMaterials(@PathVariable Long courseId, Authentication authentication)
     {
         String email = authentication.getName();
-        Users employee = userService.findUserByEmail(email);
 
         Course course = courseService.findCourseById(courseId);
 
-        if (course == null) {
-            return ResponseEntity.badRequest().body("Invalid course ID");
-        }
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseId, authentication);
 
-        //Check if the user is the actual instructor of the course by checking the ID of the instructor of the course
-        //If the user is not the instructor, then it throws a 404 error
-        if (!course.getInstructor().getId().equals(employee.getId())) {
-            return ResponseEntity.status(403).body("You are not enrolled in this course as an instructor");
+        if (authResponse != null) {
+            return authResponse;
         }
 
         Set<CourseMaterial> courseMaterials = course.getCourseMaterials();
@@ -584,18 +546,11 @@ public class InstructorController {
     public ResponseEntity<?> getAllCourseMaterials(@PathVariable Long courseId, @PathVariable("materialTitle") String courseMaterialTitle, Authentication authentication)
     {
         String email = authentication.getName();
-        Users employee = userService.findUserByEmail(email);
 
-        Course course = courseService.findCourseById(courseId);
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseId, authentication);
 
-        if (course == null) {
-            return ResponseEntity.badRequest().body("Invalid course ID");
-        }
-
-        //Check if the user is the actual instructor of the course by checking the ID of the instructor of the course
-        //If the user is not the instructor, then it throws a 404 error
-        if (!course.getInstructor().getId().equals(employee.getId())) {
-            return ResponseEntity.status(403).body("You are not enrolled in this course as an instructor");
+        if (authResponse != null) {
+            return authResponse;
         }
 
         //Fetch the corresponding course material details
@@ -617,15 +572,12 @@ public class InstructorController {
 
         Course course = courseService.findCourseById(courseId);
 
-        if (course == null) {
-            return ResponseEntity.badRequest().body("Invalid course ID");
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseId, authentication);
+
+        if (authResponse != null) {
+            return authResponse;
         }
 
-        //Check if the user is the actual instructor of the course by checking the ID of the instructor of the course
-        //If the user is not the instructor, then it throws a 404 error
-        if (!course.getInstructor().getId().equals(instructor.getId())) {
-            return ResponseEntity.status(403).body("You are not authorized to perform this operation");
-        }
         //Fetch the corresponding course material details
         CourseMaterial existingCourseMaterial = courseMaterialService.getCourseMaterialByTitle( existingCourseMaterialTitle.strip() );
 
@@ -656,18 +608,11 @@ public class InstructorController {
     public ResponseEntity<?> deleteCourseMaterial(@PathVariable Long courseId, @PathVariable("materialTitle") String courseMaterialTitle, Authentication authentication)
     {
         String email = authentication.getName();
-        Users employee = userService.findUserByEmail(email);
 
-        Course course = courseService.findCourseById(courseId);
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseId, authentication);
 
-        if (course == null) {
-            return ResponseEntity.badRequest().body("Invalid course ID");
-        }
-
-        //Check if the user is the actual instructor of the course by checking the ID of the instructor of the course
-        //If the user is not the instructor, then it throws a 404 error
-        if (!course.getInstructor().getId().equals(employee.getId())) {
-            return ResponseEntity.status(403).body("You are not authorized to perform this operation");
+        if (authResponse != null) {
+            return authResponse;
         }
 
         //Fetch the corresponding course material details

@@ -10,5 +10,5 @@ public class AssignmentResponseDTO
     long assignmentID;
     String assignmentTitle;
     String assignmentDescription;
-    Date assignmentDeadline;
+    long assignmentDeadline;
 }

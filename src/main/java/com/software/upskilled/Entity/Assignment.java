@@ -23,12 +23,11 @@ public class Assignment {
     @Column(nullable = false)
     private String title;
 
-    @Column(nullable = false)
+    @Column(nullable = false ,length = 10000)
     private String description;
 
-    @Temporal(TemporalType.DATE)
     @Column(nullable = false)
-    private Date deadline;
+    private Long deadline;
 
     @ManyToOne
     @JoinColumn(name = "course_id", nullable = false)
