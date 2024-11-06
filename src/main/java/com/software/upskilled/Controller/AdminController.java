@@ -3,6 +3,7 @@ package com.software.upskilled.Controller;
 import com.software.upskilled.Entity.Course;
 import com.software.upskilled.Entity.Users;
 import com.software.upskilled.dto.CourseDTO;
+import com.software.upskilled.dto.CourseInfoDTO;
 import com.software.upskilled.dto.CreateUserDTO;
 import com.software.upskilled.service.FileService;
 import com.software.upskilled.service.UserService;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -106,6 +108,16 @@ public class AdminController {
         return ResponseEntity.ok("User Rejected!");
     }
 
+    @DeleteMapping("/delete/{instructorId}")
+    public ResponseEntity<String> deleteInstructor(@PathVariable Long instructorId) {
+        Users instructor = userService.findUserById(instructorId);
+        if (instructor == null || !instructor.getRole().equals("INSTRUCTOR")) {
+            return ResponseEntity.badRequest().body("Invalid instructor ID");
+        }
+        userService.deleteUser(instructor);
+        return ResponseEntity.ok("User Removed!");
+    }
+
     @PostMapping("/createCourse")
     public ResponseEntity<String> createNewCourse(@RequestBody CourseDTO courseDTO) {
         Users instructor = userService.findUserById(courseDTO.getInstructorId());
@@ -125,6 +137,70 @@ public class AdminController {
         courseService.saveCourse(newCourse);
 
         return ResponseEntity.ok("Course created successfully for instructor: " + instructor.getEmail());
+    }
+
+    @PostMapping("/modifyCourse/{courseId}")
+    public ResponseEntity<String> modifyCourseDetails(@RequestBody CourseDTO courseDTO, @PathVariable Long courseId, @AuthenticationPrincipal Users user) {
+
+        Course course = courseService.findCourseById(courseId);
+        if (course == null) {
+            return ResponseEntity.badRequest().body("Course not found.");
+        }
+
+        Users instructor = userService.findUserById(courseDTO.getInstructorId());
+
+        if(!user.getId().equals(instructor.getId())) {
+            return ResponseEntity.status(403).body("You are not the instructor of this course");
+        }
+
+        if (instructor == null || (!instructor.getRole().equals("INSTRUCTOR") || !instructor.getStatus().toString().equalsIgnoreCase("ACTIVE"))) {
+            return ResponseEntity.badRequest().body("Invalid instructor ID");
+        }
+
+        if(courseService.findByTitle(courseDTO.getTitle()) != null) {
+            return ResponseEntity.badRequest().body("Course title already exists.");
+        }
+
+        course.setTitle(courseDTO.getTitle());
+        course.setDescription(courseDTO.getDescription());
+
+        courseService.saveCourse(course);
+
+        return ResponseEntity.ok("Course updated successfully for instructor: " + instructor.getEmail());
+    }
+
+    @GetMapping("/courses")
+    public ResponseEntity<List<CourseInfoDTO>> viewCourses() {
+
+        List<CourseInfoDTO> courseList =  courseService.getAllCourses().stream().map((course -> {
+            CourseInfoDTO courseInfoDTO = new CourseInfoDTO();
+            courseInfoDTO.setId(course.getId());
+            courseInfoDTO.setTitle(course.getTitle());
+            courseInfoDTO.setDescription(course.getDescription());
+            courseInfoDTO.setInstructorId(course.getInstructor().getId());
+            courseInfoDTO.setInstructorName(course.getInstructor().getFirstName() + " " + course.getInstructor().getLastName());
+            return courseInfoDTO;
+        })).collect(Collectors.toList());
+        return ResponseEntity.ok(courseList);
+    }
+
+    @GetMapping("/course/{courseId}")
+    public ResponseEntity<?> getCourseDetails(@PathVariable Long courseId) {
+
+        Course course = courseService.findCourseById(courseId);
+
+        if (course == null) {
+            return ResponseEntity.badRequest().body("Invalid course ID");
+        }
+
+        CourseInfoDTO courseInfoDTO = new CourseInfoDTO();
+        courseInfoDTO.setId(course.getId());
+        courseInfoDTO.setTitle(course.getTitle());
+        courseInfoDTO.setDescription(course.getDescription());
+        courseInfoDTO.setInstructorId(course.getInstructor().getId());
+        courseInfoDTO.setInstructorName(course.getInstructor().getFirstName() + " " + course.getInstructor().getLastName());
+
+        return ResponseEntity.ok(courseInfoDTO);
     }
 
     @GetMapping("/{courseId}/syllabus")

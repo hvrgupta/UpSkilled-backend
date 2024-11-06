@@ -8,10 +8,17 @@ import com.software.upskilled.dto.CourseDTO;
 import com.software.upskilled.dto.CourseInfoDTO;
 import com.software.upskilled.dto.CourseMaterialDTO;
 import com.software.upskilled.dto.CreateUserDTO;
+import com.software.upskilled.Entity.Announcement;
+import com.software.upskilled.Entity.Course;
+import com.software.upskilled.Entity.CourseMaterial;
+import com.software.upskilled.Entity.Users;
+import com.software.upskilled.dto.*;
 import com.software.upskilled.service.*;
+import com.software.upskilled.utils.EmployeeCourseAuth;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -47,6 +54,9 @@ public class EmployeeController {
 
     @Autowired
     private AssignmentService assignmentService;
+    
+    @Autowired
+    private EmployeeCourseAuth employeeCourseAuth;
 
     @GetMapping("/hello")
     public String hello(){
@@ -66,7 +76,44 @@ public class EmployeeController {
         userDTO.setStatus(user.getStatus());
         return userDTO;
     }
+    
+    @GetMapping("/courses")
+    public ResponseEntity<List<CourseInfoDTO>> viewCourses() {
 
+        List<CourseInfoDTO> courseList =  courseService.getAllCourses().stream().map((course -> {
+            CourseInfoDTO courseInfoDTO = new CourseInfoDTO();
+            courseInfoDTO.setId(course.getId());
+            courseInfoDTO.setTitle(course.getTitle());
+            courseInfoDTO.setDescription(course.getDescription());
+            courseInfoDTO.setInstructorId(course.getInstructor().getId());
+            courseInfoDTO.setInstructorName(course.getInstructor().getFirstName() + " " + course.getInstructor().getLastName());
+            return courseInfoDTO;
+        })).collect(Collectors.toList());
+        return ResponseEntity.ok(courseList);
+    }
+
+    @GetMapping("/course/{courseId}")
+    public ResponseEntity<?> getCourseDetails(@PathVariable Long courseId, Authentication authentication) {
+
+        Course course = courseService.findCourseById(courseId);
+
+        ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(courseId,authentication);
+
+        if (authResponse != null) {
+            return authResponse;
+        }
+
+
+        CourseInfoDTO courseInfoDTO = new CourseInfoDTO();
+        courseInfoDTO.setId(course.getId());
+        courseInfoDTO.setTitle(course.getTitle());
+        courseInfoDTO.setDescription(course.getDescription());
+        courseInfoDTO.setInstructorId(course.getInstructor().getId());
+        courseInfoDTO.setInstructorName(course.getInstructor().getFirstName() + " " + course.getInstructor().getLastName());
+
+        return ResponseEntity.ok(courseInfoDTO);
+    }
+    
     @PostMapping("/enroll")
     public ResponseEntity<String> enrollInCourse(
             @RequestParam Long courseId,
@@ -86,33 +133,53 @@ public class EmployeeController {
     public ResponseEntity<?> viewAnnouncements(
             @PathVariable Long courseId, Authentication authentication) {
 
-        String email = authentication.getName();
-        Users employee = userService.findUserByEmail(email);
+        ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(courseId,authentication);
 
-        Course course = courseService.findCourseById(courseId);
-
-        if (course == null) {
-            return ResponseEntity.badRequest().body("Invalid course ID");
-        }
-
-//      Check if the employee is enrolled in the course
-        if (course.getEnrollments().stream().noneMatch(enrollment -> enrollment.getEmployee().equals(employee))) {
-            return ResponseEntity.status(403).body("You are not enrolled in this course");
+        if (authResponse != null) {
+            return authResponse;
         }
 
         // Fetch and return the announcements
         Set<Announcement> announcements = announcementService.getAnnouncementsByCourseId(courseId);
 
-        List<AnnouncementDTO> announcementDTOs = announcements.stream()
-                .map(announcement -> new AnnouncementDTO(announcement.getId(),announcement.getTitle(), announcement.getContent()))
+        List<AnnouncementRequestDTO> announcementDTOs = announcements.stream()
+                .map(announcement -> new AnnouncementRequestDTO(announcement.getId(),announcement.getTitle(), announcement.getContent(), announcement.getUpdatedAt()))
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(announcementDTOs);
     }
 
+    @GetMapping("/getAnnouncementById/{id}")
+    public ResponseEntity<?> getAnnouncementById(
+            @PathVariable Long id, Authentication authentication) {
+
+        Announcement announcement = announcementService.findAnnouncementById(id);
+
+        if (announcement == null) {
+            return ResponseEntity.badRequest().body("Announcement not found");
+        }
+
+        Course course = announcement.getCourse();
+
+        ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(course.getId(), authentication);
+
+        if (authResponse != null) {
+            return authResponse;
+        }
+
+        AnnouncementRequestDTO announcementDTO = new AnnouncementRequestDTO();
+        announcementDTO.setId(announcement.getId());
+        announcementDTO.setContent(announcement.getContent());
+        announcementDTO.setTitle(announcement.getTitle());
+        announcementDTO.setUpdatedAt(announcement.getUpdatedAt());
+
+        return ResponseEntity.ok(announcementDTO);
+
+    }
+
     // Endpoint to view the syllabus for a course
     @GetMapping("/{courseId}/syllabus")
-    public ResponseEntity<?>  viewSyllabus(@PathVariable Long courseId) {
+    public ResponseEntity<?> viewSyllabus(@PathVariable Long courseId) {
 
         // Find the course by ID
         Course course = courseService.findCourseById(courseId);
@@ -123,16 +190,19 @@ public class EmployeeController {
 
         // Check if a syllabus is uploaded
         String syllabusUrl = course.getSyllabusUrl();
+
         if (syllabusUrl == null || syllabusUrl.isEmpty()) {
             return ResponseEntity.badRequest().body("No syllabus uploaded for this course.");
         }
+
         final byte[] data = fileService.viewSyllabus(courseId);
         final ByteArrayResource resource = new ByteArrayResource(data);
+
         return ResponseEntity
                 .ok()
                 .contentLength(data.length)
-                .header("Content-type", "application/octet-stream")
                 .header("Content-disposition", "attachment; filename=\"" + syllabusUrl + "\"")
+                .contentType(MediaType.APPLICATION_PDF)
                 .body(resource);
 
     }
@@ -140,19 +210,13 @@ public class EmployeeController {
     @GetMapping("/getCourseMaterials/{courseId}")
     public ResponseEntity<?> getAllCourseMaterials(@PathVariable Long courseId, Authentication authentication)
     {
-        String email = authentication.getName();
-        Users employee = userService.findUserByEmail(email);
+        ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(courseId,authentication);
+
+        if (authResponse != null) {
+            return authResponse;
+        }
 
         Course course = courseService.findCourseById(courseId);
-
-        if (course == null) {
-            return ResponseEntity.badRequest().body("Invalid course ID");
-        }
-
-        //Check if the employee is enrolled in the course
-        if (course.getEnrollments().stream().noneMatch(enrollment -> enrollment.getEmployee().equals(employee))) {
-            return ResponseEntity.status(403).body("You are not enrolled in this course");
-        }
 
         Set<CourseMaterial> courseMaterials = course.getCourseMaterials();
 
@@ -174,18 +238,11 @@ public class EmployeeController {
     @GetMapping("/getCourseMaterial/{courseId}/{materialTitle}")
     public ResponseEntity<?> getAllCourseMaterials(@PathVariable Long courseId, @PathVariable("materialTitle") String courseMaterialTitle, Authentication authentication)
     {
-        String email = authentication.getName();
-        Users employee = userService.findUserByEmail(email);
 
-        Course course = courseService.findCourseById(courseId);
+        ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(courseId,authentication);
 
-        if (course == null) {
-            return ResponseEntity.badRequest().body("Invalid course ID");
-        }
-
-        //Check if the employee is enrolled in the course
-        if (course.getEnrollments().stream().noneMatch(enrollment -> enrollment.getEmployee().equals(employee))) {
-            return ResponseEntity.status(403).body("You are not enrolled in this course");
+        if (authResponse != null) {
+            return authResponse;
         }
 
         //Fetch the corresponding course material details
@@ -222,6 +279,5 @@ public class EmployeeController {
         //Upload the Assignment file to the assignment bucket
         return ResponseEntity.ok( fileService.uploadAssignmentSubmission( file, course, assignmentDetails, employee ) );
     }
-
 
 }

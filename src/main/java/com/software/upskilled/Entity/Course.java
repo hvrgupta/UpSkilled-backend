@@ -23,7 +23,7 @@ public class Course {
     @Column(unique = true, nullable = false)
     private String title;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 5000)
     private String description;
 
     @CreationTimestamp
@@ -34,7 +34,7 @@ public class Course {
     @Column(name = "updated_at")
     private Date updatedAt;
 
-    @Column
+    @Column(length = 5000)
     private String syllabusUrl;
 
     @ManyToOne
