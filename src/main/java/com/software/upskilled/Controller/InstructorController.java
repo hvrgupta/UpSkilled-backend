@@ -341,16 +341,7 @@ public class InstructorController {
                     submissionResponseDTO.setSubmission_url( assignmentSubmission.getSubmissionUrl() );
                     submissionResponseDTO.setSubmission_at( assignmentSubmission.getSubmittedAt() );
                     submissionResponseDTO.setSubmission_status( assignmentSubmission.getStatus() );
-
-                    //Creating the appropriate Assignment Response Details object as well
-                    AssignmentResponseDTO assignmentResponseDTO = new AssignmentResponseDTO();
-                    assignmentResponseDTO.setAssignmentID( assignmentDetails.getId() );
-                    assignmentResponseDTO.setAssignmentTitle( assignmentDetails.getTitle() );
-                    assignmentResponseDTO.setAssignmentDescription( assignmentDetails.getDescription() );
-                    assignmentResponseDTO.setAssignmentDeadline( assignmentDetails.getDeadline() );
-
-                    //Setting the assignment details in the submission response
-                    submissionResponseDTO.setAssignmentResponseDTO( assignmentResponseDTO );
+                    submissionResponseDTO.setAssignmentID(assignmentDetails.getId());
                 });
                 return ResponseEntity.ok(submissionResponseDTOList);
             }
@@ -424,35 +415,8 @@ public class InstructorController {
                 gradeBookResponseDTO.setGrade( gradeBookDetails.getGrade() );
                 gradeBookResponseDTO.setFeedback( gradeBookDetails.getFeedback() );
                 gradeBookResponseDTO.setGradedDate( gradeBookDetails.getGradedAt() );
-
-                //Creating the instructor DTO object properties
-                CreateUserDTO instructorDTO = new CreateUserDTO();
-
-                instructorDTO.setId(instructor.getId() );
-                instructorDTO.setFirstName(instructorDTO.getFirstName() );
-                instructorDTO.setLastName(instructorDTO.getLastName() );
-                gradeBookResponseDTO.setInstructorDTO( instructorDTO );
-
-                //Since, our Submission request is linked with other tables, we have to create DTO objects in order
-                //felicitate the transfer of the data,Therefore creating the submission response DTO which will have
-                //the necessary properties
-                SubmissionResponseDTO submissionResponseDTO = new SubmissionResponseDTO();
-                submissionResponseDTO.setSubmission_id( uploadedSubmissionDetails.getId() );
-                submissionResponseDTO.setSubmission_url( uploadedSubmissionDetails.getSubmissionUrl() );
-                submissionResponseDTO.setSubmission_at( uploadedSubmissionDetails.getSubmittedAt() );
-                submissionResponseDTO.setSubmission_status( uploadedSubmissionDetails.getStatus() );
-
-                //Creating the appropriate Assignment Response Details object as well
-                AssignmentResponseDTO assignmentResponseDTO = new AssignmentResponseDTO();
-                assignmentResponseDTO.setAssignmentID( uploadedSubmissionDetails.getAssignment().getId() );
-                assignmentResponseDTO.setAssignmentTitle( uploadedSubmissionDetails.getAssignment().getTitle() );
-                assignmentResponseDTO.setAssignmentDescription( uploadedSubmissionDetails.getAssignment().getDescription() );
-                assignmentResponseDTO.setAssignmentDeadline( uploadedSubmissionDetails.getAssignment().getDeadline() );
-
-                //Setting the assignment response DTO in the submission response and then submitting the submission
-                //response in the GradeBook DTO
-                submissionResponseDTO.setAssignmentResponseDTO( assignmentResponseDTO );
-                gradeBookResponseDTO.setSubmissionResponseDTO( submissionResponseDTO );
+                gradeBookResponseDTO.setInstructorID( instructor.getId() );
+                gradeBookResponseDTO.setSubmissionID( uploadedSubmissionDetails.getId() );
 
                 return ResponseEntity.ok( gradeBookResponseDTO );
 
@@ -461,16 +425,15 @@ public class InstructorController {
 
     }
 
-    @PostMapping("/{courseID}/assignments/{assignmentId}/submissions/{submissionID}/GradeBook/GradeAssignment")
-    public ResponseEntity<?> submitGradesToGradeBook(@PathVariable Long assignmentId, @PathVariable Long courseID,
-                                                     @PathVariable Long submissionID, Authentication authentication, @RequestBody GradeBookRequestDTO gradingDetails)
+    @PostMapping("/GradeBook/GradeAssignment")
+    public ResponseEntity<?> submitGradesToGradeBook(@RequestParam("submissionID") String submissionID, @RequestParam("courseID") String courseID, Authentication authentication, @RequestBody GradeBookRequestDTO gradingDetails)
     {
         //Obtaining the email of the user from the authentication object
         String email = authentication.getName();
         //Obtaining the instructor details
         Users instructor = userService.findUserByEmail(email);
 
-        Course course = courseService.findCourseById(courseID);
+        Course course = courseService.findCourseById(Long.parseLong( courseID));
 
         if (course == null ) {
             return ResponseEntity.badRequest().body("Invalid course ID");
@@ -483,7 +446,7 @@ public class InstructorController {
             return ResponseEntity.status(403).body("You are not the instructor of this course and hence not authorized to perform this operation");
         }
         //Get the submission details associated with the ID
-        Submission uploadedSubmissionDetails = submissionService.getSubmissionByID( submissionID );
+        Submission uploadedSubmissionDetails = submissionService.getSubmissionByID( Long.parseLong( submissionID ));
         if( uploadedSubmissionDetails == null )
             return ResponseEntity.badRequest().body("Submission not found");
         else
@@ -501,9 +464,19 @@ public class InstructorController {
                         .instructor(instructor).build();
 
                 //Provide the GradeBook submission to the GradeBook service so that it can be stored in the database
-                gradeBookService.saveGradeBookSubmission( gradeBookSubmission );
-                return ResponseEntity.ok( gradeBookSubmission );
+                Gradebook submittedGradeBookSubmission = gradeBookService.saveGradeBookSubmission( gradeBookSubmission );
 
+                //Create GradeBook response DTO object
+                GradeBookResponseDTO gradeBookResponseDTO = new GradeBookResponseDTO();
+                gradeBookResponseDTO.setGrade( submittedGradeBookSubmission.getGrade() );
+                gradeBookResponseDTO.setFeedback( submittedGradeBookSubmission.getFeedback() );
+                gradeBookResponseDTO.setGradedDate( submittedGradeBookSubmission.getGradedAt() );
+                gradeBookResponseDTO.setSubmissionID( uploadedSubmissionDetails.getId() );
+                gradeBookResponseDTO.setInstructorID( instructor.getId() );
+
+
+                //Create
+                return ResponseEntity.ok( gradeBookResponseDTO );
             }
         }
     }

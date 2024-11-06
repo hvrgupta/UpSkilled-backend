@@ -1,10 +1,7 @@
 package com.software.upskilled.Controller;
 
 import com.amazonaws.Response;
-import com.software.upskilled.Entity.Announcement;
-import com.software.upskilled.Entity.Course;
-import com.software.upskilled.Entity.CourseMaterial;
-import com.software.upskilled.Entity.Users;
+import com.software.upskilled.Entity.*;
 import com.software.upskilled.dto.AnnouncementDTO;
 import com.software.upskilled.dto.CourseMaterialDTO;
 import com.software.upskilled.dto.CourseDTO;
@@ -19,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,6 +44,9 @@ public class EmployeeController {
 
     @Autowired
     private CourseMaterialService courseMaterialService;
+
+    @Autowired
+    private AssignmentService assignmentService;
 
     @GetMapping("/hello")
     public String hello(){
@@ -194,6 +195,33 @@ public class EmployeeController {
 
     }
 
+    @PostMapping("/uploadAssignment")
+    public ResponseEntity<?> uploadAssignment(@RequestParam("file") MultipartFile file,
+                                              Authentication authentication, @RequestParam("assignmentID") String assignmentID,
+                                              @RequestParam("courseID")String courseID)
+    {
+        //Validate if the user is authenticated and they are the actual user
+        String email = authentication.getName();
+        Users employee = userService.findUserByEmail(email);
+
+        //Get the courseDetails data
+        Course course = courseService.findCourseById(Long.parseLong( courseID));
+        if (course == null) {
+            return ResponseEntity.badRequest().body("Invalid course ID");
+        }
+        //Check if the employee is enrolled in the course
+        if (course.getEnrollments().stream().noneMatch(enrollment -> enrollment.getEmployee().equals(employee))) {
+            return ResponseEntity.status(403).body("You are not enrolled in this course");
+        }
+        //Get the assignment details since all the validation checks are successful
+        Assignment assignmentDetails = assignmentService.getAssignmentById( Long.parseLong(assignmentID) );
+        if (assignmentDetails == null) {
+            return ResponseEntity.badRequest().body("Assignment not found; Please pass a valid assignment ID");
+        }
+
+        //Upload the Assignment file to the assignment bucket
+        return ResponseEntity.ok( fileService.uploadAssignmentSubmission( file, course, assignmentDetails, employee ) );
+    }
 
 
 }
