@@ -13,6 +13,7 @@ import com.software.upskilled.Entity.Course;
 import com.software.upskilled.Entity.CourseMaterial;
 import com.software.upskilled.Entity.Users;
 import com.software.upskilled.dto.*;
+import com.software.upskilled.repository.SubmissionRepository;
 import com.software.upskilled.service.*;
 import com.software.upskilled.utils.EmployeeCourseAuth;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,6 +58,10 @@ public class EmployeeController {
     
     @Autowired
     private EmployeeCourseAuth employeeCourseAuth;
+    @Autowired
+    private SubmissionRepository submissionRepository;
+    @Autowired
+    private GradeBookService gradeBookService;
 
     @GetMapping("/hello")
     public String hello(){
@@ -257,27 +262,64 @@ public class EmployeeController {
                                               Authentication authentication, @RequestParam("assignmentID") String assignmentID,
                                               @RequestParam("courseID")String courseID)
     {
-        //Validate if the user is authenticated and they are the actual user
+        ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(Long.parseLong( courseID ),authentication);
+
+        if (authResponse != null) {
+            return authResponse;
+        }
+
+        //Get the employee details from the authentication
         String email = authentication.getName();
         Users employee = userService.findUserByEmail(email);
 
-        //Get the courseDetails data
-        Course course = courseService.findCourseById(Long.parseLong( courseID));
-        if (course == null) {
-            return ResponseEntity.badRequest().body("Invalid course ID");
-        }
-        //Check if the employee is enrolled in the course
-        if (course.getEnrollments().stream().noneMatch(enrollment -> enrollment.getEmployee().equals(employee))) {
-            return ResponseEntity.status(403).body("You are not enrolled in this course");
-        }
         //Get the assignment details since all the validation checks are successful
         Assignment assignmentDetails = assignmentService.getAssignmentById( Long.parseLong(assignmentID) );
-        if (assignmentDetails == null) {
-            return ResponseEntity.badRequest().body("Assignment not found; Please pass a valid assignment ID");
-        }
+        //Get the course details from the assignment details
+        Course course = assignmentDetails.getCourse();
 
         //Upload the Assignment file to the assignment bucket
         return ResponseEntity.ok( fileService.uploadAssignmentSubmission( file, course, assignmentDetails, employee ) );
     }
+
+    //Method to update the Assignment uploaded. The system always keeps the latest copy of the assignment
+    //and removes the previously uploaded file.
+    @PutMapping("/updateUploadedAssignment/{submissionID}")
+    public ResponseEntity<?> updateUploadedAssignment( @PathVariable("submissionID") String submissionID,
+                                                       @RequestParam("file") MultipartFile file,
+                                                       @RequestParam("courseID") String courseID,
+                                                       Authentication authentication)
+    {
+        //Invoking the auth util method to verify the employee
+        ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(Long.parseLong( courseID ),authentication);
+
+        if (authResponse != null) {
+            return authResponse;
+        }
+        //Get the already submitted submission details
+        Submission alreadySubmittedResponse = submissionRepository.getSubmissionById( Long.parseLong(submissionID) );
+        //Check if the submitted Response already has a grade linked with it
+        Gradebook gradebookDetails = alreadySubmittedResponse.getGrade();
+        System.out.println( gradebookDetails.getGrade() );
+        //If the assignment already has a grade, then we need to remove the grade assigned with the submission as well
+        if( gradebookDetails != null ){
+            gradeBookService.deleteGradeBookSubmission( gradebookDetails.getId() );
+        }
+
+        //First delete the already submitted assignment so that the new assignment can be uploaded
+        FileDeletionResponse deletionResponse = fileService.deleteUploadedAssignment(alreadySubmittedResponse.getSubmissionUrl() );
+        //Check if the file is deleted
+        if( deletionResponse.isDeletionSuccessfull() ) {
+            //Invoke the update operation on the assignment
+            return new ResponseEntity<>( fileService.updateAssignmentSubmission( file, alreadySubmittedResponse ), HttpStatus.OK);
+        }
+        else
+        {
+            return ResponseEntity.status(200).body("Failed to delete the existing uploaded Assignment, Please upload again later" );
+        }
+
+    }
+
+
+
 
 }

@@ -370,6 +370,9 @@ public class InstructorController {
                     submissionResponseDTO.setSubmission_at( assignmentSubmission.getSubmittedAt() );
                     submissionResponseDTO.setSubmission_status( assignmentSubmission.getStatus() );
                     submissionResponseDTO.setAssignmentID(assignmentDetails.getId());
+
+                    //Adding DTO to the list
+                    submissionResponseDTOList.add( submissionResponseDTO );
                 });
                 return ResponseEntity.ok(submissionResponseDTOList);
             }
@@ -482,6 +485,43 @@ public class InstructorController {
                 return ResponseEntity.ok( gradeBookResponseDTO );
             }
         }
+    }
+
+    @PutMapping("/GradeBook/updateGradeAssignment")
+    public ResponseEntity<?> updateGradeDetails( @RequestBody GradeBookRequestDTO gradeBookRequestDTO,
+                                                 @RequestParam("gradingID") long gradingID,
+                                                 Authentication authentication)
+    {
+        //Getting the courseID details from the grading ID
+        Gradebook gradeBookDetails = gradeBookService.getGradeBookByID( gradingID );
+        //Getting the submission and from there getting the course ID
+        long courseID = gradeBookDetails.getSubmission().getAssignment().getCourse().getId();
+        //Validating the instructor
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseID, authentication);
+        if (authResponse != null) {
+            return authResponse;
+        }
+
+        //Updating the values'
+        gradeBookDetails.setGrade(gradeBookRequestDTO.getGrade() );
+        gradeBookDetails.setFeedback(gradeBookDetails.getFeedback() );
+
+        //Saving the updated value into the database
+        gradeBookService.saveGradeBookSubmission( gradeBookDetails );
+
+        //Set the GradeBook Response DT
+        GradeBookResponseDTO gradeBookResponseDTO = new GradeBookResponseDTO();
+        //Setting the values
+        gradeBookResponseDTO.setGrade(gradeBookRequestDTO.getGrade() );
+        gradeBookResponseDTO.setFeedback(gradeBookRequestDTO.getFeedback());
+        gradeBookResponseDTO.setInstructorID( gradeBookDetails.getInstructor().getId() );
+        gradeBookResponseDTO.setSubmissionID( gradeBookDetails.getSubmission().getId() );
+        gradeBookResponseDTO.setGradedDate( gradeBookService.getGradeBookByID( gradeBookDetails.getId() ).getGradedAt() );
+
+
+        //Saving the new details into the database and sending the response object back
+        return new ResponseEntity<>( gradeBookResponseDTO, HttpStatus.OK );
+
     }
 
     @PostMapping("/uploadCourseMaterial/{courseId}")

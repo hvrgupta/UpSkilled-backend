@@ -1,9 +1,6 @@
 package com.software.upskilled.service;
 
-import com.software.upskilled.Entity.Assignment;
-import com.software.upskilled.Entity.Course;
-import com.software.upskilled.Entity.CourseMaterial;
-import com.software.upskilled.Entity.Users;
+import com.software.upskilled.Entity.*;
 import com.software.upskilled.dto.CourseMaterialDTO;
 import com.software.upskilled.dto.FileDeletionResponse;
 import com.software.upskilled.dto.FileUploadResponse;
@@ -25,7 +22,11 @@ public interface FileService {
 
     FileUploadResponse uploadAssignmentSubmission(MultipartFile multipartFile, Course courseData, Assignment assignmentData, Users employeeData );
 
+    FileUploadResponse updateAssignmentSubmission(MultipartFile multipartFile, Submission alreadySubmittedSubmission );
+
     public FileDeletionResponse deleteCourseMaterial(String courseMaterialURL);
+
+    public FileDeletionResponse deleteUploadedAssignment( String submissionURL );
 
     public byte[] viewCourseMaterial( String courseMaterialURL);
 
