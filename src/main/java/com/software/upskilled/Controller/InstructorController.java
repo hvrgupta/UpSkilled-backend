@@ -74,6 +74,43 @@ public class InstructorController {
         return userDTO;
     }
 
+    @GetMapping("/courses")
+    public ResponseEntity<List<CourseInfoDTO>> viewCourses() {
+
+        List<CourseInfoDTO> courseList =  courseService.getAllCourses().stream().map((course -> {
+            CourseInfoDTO courseInfoDTO = new CourseInfoDTO();
+            courseInfoDTO.setId(course.getId());
+            courseInfoDTO.setTitle(course.getTitle());
+            courseInfoDTO.setDescription(course.getDescription());
+            courseInfoDTO.setInstructorId(course.getInstructor().getId());
+            courseInfoDTO.setInstructorName(course.getInstructor().getFirstName() + " " + course.getInstructor().getLastName());
+            return courseInfoDTO;
+        })).collect(Collectors.toList());
+        return ResponseEntity.ok(courseList);
+    }
+
+    @GetMapping("/course/{courseId}")
+    public ResponseEntity<?> getCourseDetails(@PathVariable Long courseId, Authentication authentication) {
+
+        Course course = courseService.findCourseById(courseId);
+
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseId,authentication);
+
+        if (authResponse != null) {
+            return authResponse;
+        }
+
+
+        CourseInfoDTO courseInfoDTO = new CourseInfoDTO();
+        courseInfoDTO.setId(course.getId());
+        courseInfoDTO.setTitle(course.getTitle());
+        courseInfoDTO.setDescription(course.getDescription());
+        courseInfoDTO.setInstructorId(course.getInstructor().getId());
+        courseInfoDTO.setInstructorName(course.getInstructor().getFirstName() + " " + course.getInstructor().getLastName());
+
+        return ResponseEntity.ok(courseInfoDTO);
+    }
+
     // View announcements for a specific course
     @GetMapping("/course/{courseId}/announcements")
     public ResponseEntity<?> viewAnnouncementsForEditing(
