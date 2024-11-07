@@ -195,8 +195,32 @@ public class InstructorController {
             @RequestBody AnnouncementDTO announcementDTO,
             Authentication authentication) {
 
-        String email = authentication.getName();
-        Users instructor = userService.findUserByEmail(email);
+        Announcement announcement = announcementService.findAnnouncementById(announcementId);
+
+        if (announcement == null) {
+            return ResponseEntity.badRequest().body("Announcement not found");
+        }
+
+        Course course = announcement.getCourse();
+
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(course.getId(), authentication);
+
+        if (authResponse != null) {
+            return authResponse;
+        }
+
+        announcement.setTitle(announcementDTO.getTitle());
+        announcement.setContent(announcementDTO.getContent());
+        announcementService.saveAnnouncement(announcement);
+
+        return ResponseEntity.ok("Announcement updated successfully");
+    }
+
+    // Delete an existing announcement
+    @PutMapping("/announcement/{announcementId}")
+    public ResponseEntity<String> deleteAnnouncement(
+            @PathVariable Long announcementId,
+            Authentication authentication) {
 
         Announcement announcement = announcementService.findAnnouncementById(announcementId);
 
@@ -206,16 +230,15 @@ public class InstructorController {
 
         Course course = announcement.getCourse();
 
-        // Check if the instructor is assigned to the course of this announcement
-        if (!course.getInstructor().getId().equals(instructor.getId())) {
-            return ResponseEntity.status(403).body("You are not the instructor of this course");
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(course.getId(), authentication);
+
+        if (authResponse != null) {
+            return authResponse;
         }
 
-        announcement.setTitle(announcementDTO.getTitle());
-        announcement.setContent(announcementDTO.getContent());
-        announcementService.saveAnnouncement(announcement);
+        announcementService.deleteAnnouncement(announcement.getId());
 
-        return ResponseEntity.ok("Announcement updated successfully");
+        return ResponseEntity.ok("Announcement Deleted successfully");
     }
 
     @PostMapping("/uploadSyllabus/{courseId}")
