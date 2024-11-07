@@ -217,7 +217,7 @@ public class InstructorController {
     }
 
     // Delete an existing announcement
-    @PutMapping("/announcement/{announcementId}")
+    @DeleteMapping("/deleteAnnouncementById/{announcementId}")
     public ResponseEntity<String> deleteAnnouncement(
             @PathVariable Long announcementId,
             Authentication authentication) {
