@@ -1,11 +1,19 @@
 package com.software.upskilled.Controller;
 
 import com.amazonaws.Response;
+import com.software.upskilled.Entity.*;
+import com.software.upskilled.dto.AnnouncementDTO;
+import com.software.upskilled.dto.CourseMaterialDTO;
+import com.software.upskilled.dto.CourseDTO;
+import com.software.upskilled.dto.CourseInfoDTO;
+import com.software.upskilled.dto.CourseMaterialDTO;
+import com.software.upskilled.dto.CreateUserDTO;
 import com.software.upskilled.Entity.Announcement;
 import com.software.upskilled.Entity.Course;
 import com.software.upskilled.Entity.CourseMaterial;
 import com.software.upskilled.Entity.Users;
 import com.software.upskilled.dto.*;
+import com.software.upskilled.repository.SubmissionRepository;
 import com.software.upskilled.service.*;
 import com.software.upskilled.utils.EmployeeCourseAuth;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +24,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,9 +55,13 @@ public class EmployeeController {
 
     @Autowired
     private AssignmentService assignmentService;
-
+    
     @Autowired
     private EmployeeCourseAuth employeeCourseAuth;
+    @Autowired
+    private SubmissionRepository submissionRepository;
+    @Autowired
+    private GradeBookService gradeBookService;
 
     @GetMapping("/hello")
     public String hello(){
@@ -68,7 +81,7 @@ public class EmployeeController {
         userDTO.setStatus(user.getStatus());
         return userDTO;
     }
-
+    
     @GetMapping("/courses")
     public ResponseEntity<List<CourseInfoDTO>> viewCourses() {
 
@@ -105,7 +118,7 @@ public class EmployeeController {
 
         return ResponseEntity.ok(courseInfoDTO);
     }
-
+    
     @PostMapping("/enroll")
     public ResponseEntity<String> enrollInCourse(
             @RequestParam Long courseId,
@@ -243,6 +256,70 @@ public class EmployeeController {
         return new ResponseEntity<>(fileService.viewCourseMaterial( courseMaterial.getCourseMaterialUrl() ), HttpStatus.OK);
 
     }
+
+    @PostMapping("/uploadAssignment")
+    public ResponseEntity<?> uploadAssignment(@RequestParam("file") MultipartFile file,
+                                              Authentication authentication, @RequestParam("assignmentID") String assignmentID,
+                                              @RequestParam("courseID")String courseID)
+    {
+        ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(Long.parseLong( courseID ),authentication);
+
+        if (authResponse != null) {
+            return authResponse;
+        }
+
+        //Get the employee details from the authentication
+        String email = authentication.getName();
+        Users employee = userService.findUserByEmail(email);
+
+        //Get the assignment details since all the validation checks are successful
+        Assignment assignmentDetails = assignmentService.getAssignmentById( Long.parseLong(assignmentID) );
+        //Get the course details from the assignment details
+        Course course = assignmentDetails.getCourse();
+
+        //Upload the Assignment file to the assignment bucket
+        return ResponseEntity.ok( fileService.uploadAssignmentSubmission( file, course, assignmentDetails, employee ) );
+    }
+
+    //Method to update the Assignment uploaded. The system always keeps the latest copy of the assignment
+    //and removes the previously uploaded file.
+    @PutMapping("/updateUploadedAssignment/{submissionID}")
+    public ResponseEntity<?> updateUploadedAssignment( @PathVariable("submissionID") String submissionID,
+                                                       @RequestParam("file") MultipartFile file,
+                                                       @RequestParam("courseID") String courseID,
+                                                       Authentication authentication)
+    {
+        //Invoking the auth util method to verify the employee
+        ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(Long.parseLong( courseID ),authentication);
+
+        if (authResponse != null) {
+            return authResponse;
+        }
+        //Get the already submitted submission details
+        Submission alreadySubmittedResponse = submissionRepository.getSubmissionById( Long.parseLong(submissionID) );
+        //Check if the submitted Response already has a grade linked with it
+        Gradebook gradebookDetails = alreadySubmittedResponse.getGrade();
+        System.out.println( gradebookDetails.getGrade() );
+        //If the assignment already has a grade, then we need to remove the grade assigned with the submission as well
+        if( gradebookDetails != null ){
+            gradeBookService.deleteGradeBookSubmission( gradebookDetails.getId() );
+        }
+
+        //First delete the already submitted assignment so that the new assignment can be uploaded
+        FileDeletionResponse deletionResponse = fileService.deleteUploadedAssignment(alreadySubmittedResponse.getSubmissionUrl() );
+        //Check if the file is deleted
+        if( deletionResponse.isDeletionSuccessfull() ) {
+            //Invoke the update operation on the assignment
+            return new ResponseEntity<>( fileService.updateAssignmentSubmission( file, alreadySubmittedResponse ), HttpStatus.OK);
+        }
+        else
+        {
+            return ResponseEntity.status(200).body("Failed to delete the existing uploaded Assignment, Please upload again later" );
+        }
+
+    }
+
+
 
 
 }

@@ -227,6 +227,46 @@ public class FileServiceImpl implements FileService {
 
     }
 
+    @Override
+    public FileUploadResponse updateAssignmentSubmission(MultipartFile multipartFile, Submission alreadySubmittedSubmission) {
+        FileUploadResponse fileUploadResponse = new FileUploadResponse();
+        String filePath = "";
+
+        //Getting the Assignment Details from the already submittedResponse
+        Assignment parentAssignment = alreadySubmittedSubmission.getAssignment();
+        //Getting the course name from the parent Assignment object
+        String courseName = parentAssignment.getCourse().getTitle();
+        //Getting the assignment title from the parentAssignment object
+        String assignmentName = parentAssignment.getTitle();
+        //Getting the employee name who uploaded the assignment
+        String employeeName = alreadySubmittedSubmission.getEmployee().getFirstName()+"_"+
+                alreadySubmittedSubmission.getEmployee().getLastName();
+
+        try {
+            ObjectMetadata objectMetadata = new ObjectMetadata();
+            objectMetadata.setContentType(multipartFile.getContentType());
+            objectMetadata.setContentLength(multipartFile.getSize());
+            filePath = courseName + "/"+ assignmentName + "/" + employeeName+"_"+multipartFile.getOriginalFilename();
+            s3Client.putObject( assignmentBucketName , filePath, multipartFile.getInputStream(), objectMetadata);
+            fileUploadResponse.setFilePath(filePath);
+            fileUploadResponse.setDateTime(LocalDateTime.now());
+
+            /**
+             * Since, we are updating the submission, we just need to upload the submission
+             * url and then save the file.
+             */
+            alreadySubmittedSubmission.setSubmissionUrl( filePath );
+
+            //Saving the new submission details to the database
+            submissionService.saveSubmissionDetails( alreadySubmittedSubmission );
+
+        } catch (IOException e) {
+            log.error("Error occurred ==> {}", e.getMessage());
+            throw new FileUploadException("Error occurred in updating the submitted Assignment File ==> "+e.getMessage());
+        }
+        return fileUploadResponse;
+
+    }
 
     @Override
     public FileDeletionResponse deleteCourseMaterial(String courseMaterialURL) {
@@ -246,6 +286,27 @@ public class FileServiceImpl implements FileService {
 
         } catch (AmazonServiceException e) {
             throw new IllegalStateException("Failed to delete the file", e);
+        }
+    }
+
+    @Override
+    public FileDeletionResponse deleteUploadedAssignment(String submissionURL) {
+        try {
+            DeleteObjectRequest deleteCourseMaterialRequest = new DeleteObjectRequest( assignmentBucketName, submissionURL );
+
+            s3Client.deleteObject(deleteCourseMaterialRequest);
+            System.out.println("Uploaded assignment successfully deleted successfully from Cloud Storage.");
+
+            //Creating the File Deletion Response object
+            FileDeletionResponse fileDeletionResponse = new FileDeletionResponse();
+            fileDeletionResponse.setDeletionSuccessfull( true );
+            String [] submissionURLArray = submissionURL.split("_");
+            fileDeletionResponse.setFileName( submissionURLArray[2] );
+
+            return fileDeletionResponse;
+
+        } catch (AmazonServiceException e) {
+            throw new IllegalStateException("Failed to delete the uploaded assignment file", e);
         }
     }
 

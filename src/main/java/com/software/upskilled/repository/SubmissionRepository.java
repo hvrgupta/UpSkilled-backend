@@ -8,4 +8,5 @@ import org.springframework.stereotype.Repository;
 public interface SubmissionRepository extends JpaRepository<Submission, Long>
 {
     Submission getSubmissionById(long id);
+
 }
