@@ -40,6 +40,7 @@ public class Course {
     @Column(length = 5000)
     private String syllabusUrl;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Status status;
 
