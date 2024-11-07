@@ -88,7 +88,7 @@ public class AdminController {
 
     @GetMapping("/listActiveInstructors")
     public ResponseEntity<List<CreateUserDTO>> getActiveInstructorsList() {
-        List<CreateUserDTO> instructorList = new ArrayList<>(userService.getInactiveInstructors().stream().map((instructor) -> {
+        List<CreateUserDTO> instructorList = new ArrayList<>(userService.getActiveInstructors().stream().map((instructor) -> {
             CreateUserDTO userDTO = new CreateUserDTO();
             userDTO.setEmail(instructor.getEmail());
             userDTO.setRole(instructor.getRole());
