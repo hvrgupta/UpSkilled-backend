@@ -86,6 +86,24 @@ public class AdminController {
         return ResponseEntity.ok(instructorList);
     }
 
+    @GetMapping("/listActiveInstructors")
+    public ResponseEntity<List<CreateUserDTO>> getActiveInstructorsList() {
+        List<CreateUserDTO> instructorList = new ArrayList<>(userService.getInactiveInstructors().stream().map((instructor) -> {
+            CreateUserDTO userDTO = new CreateUserDTO();
+            userDTO.setEmail(instructor.getEmail());
+            userDTO.setRole(instructor.getRole());
+            userDTO.setPassword("*******");
+            userDTO.setFirstName(instructor.getFirstName());
+            userDTO.setLastName(instructor.getLastName());
+            userDTO.setDesignation(instructor.getDesignation());
+            userDTO.setId(instructor.getId());
+            userDTO.setStatus(instructor.getStatus());
+            return userDTO;
+        }).toList());
+
+        return ResponseEntity.ok(instructorList);
+    }
+
     @PostMapping("/approve/{instructorId}")
     public ResponseEntity<String> approveInstructor(@PathVariable Long instructorId) {
           Users instructor = userService.findUserById(instructorId);
@@ -108,15 +126,15 @@ public class AdminController {
         return ResponseEntity.ok("User Rejected!");
     }
 
-    @DeleteMapping("/delete/{instructorId}")
-    public ResponseEntity<String> deleteInstructor(@PathVariable Long instructorId) {
-        Users instructor = userService.findUserById(instructorId);
-        if (instructor == null || !instructor.getRole().equals("INSTRUCTOR")) {
-            return ResponseEntity.badRequest().body("Invalid instructor ID");
-        }
-        userService.deleteUser(instructor);
-        return ResponseEntity.ok("User Removed!");
-    }
+//    @DeleteMapping("/delete/{instructorId}")
+//    public ResponseEntity<String> deleteInstructor(@PathVariable Long instructorId) {
+//        Users instructor = userService.findUserById(instructorId);
+//        if (instructor == null || !instructor.getRole().equals("INSTRUCTOR")) {
+//            return ResponseEntity.badRequest().body("Invalid instructor ID");
+//        }
+//        userService.deleteUser(instructor);
+//        return ResponseEntity.ok("User Removed!");
+//    }
 
     @PostMapping("/createCourse")
     public ResponseEntity<String> createNewCourse(@RequestBody CourseDTO courseDTO) {
