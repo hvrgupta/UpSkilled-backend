@@ -312,7 +312,7 @@ public class InstructorController {
 
         long currentEpoch = System.currentTimeMillis();
 
-        if (currentEpoch < assignment.getDeadline()) {
+        if (currentEpoch > assignment.getDeadline()) {
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
                     .body("The deadline must be a future date.");
