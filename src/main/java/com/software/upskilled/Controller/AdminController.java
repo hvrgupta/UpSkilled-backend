@@ -11,7 +11,9 @@ import com.software.upskilled.service.CourseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -50,6 +52,18 @@ public class AdminController {
         userDTO.setDesignation(user.getDesignation());
         userDTO.setStatus(user.getStatus());
         return userDTO;
+    }
+
+    @PostMapping("/update-profile")
+    public ResponseEntity<String> updateUser(@RequestBody CreateUserDTO userDTO, Authentication authentication) {
+        try {
+            Users user = userService.findUserByEmail(authentication.getName());
+            user.setDesignation(userDTO.getDesignation());
+            userService.updateUser(user);
+            return ResponseEntity.status(HttpStatus.CREATED).body("User updated successfully!");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Updation failed : " + e.getMessage());
+        }
     }
 
     @GetMapping("/listInstructors")

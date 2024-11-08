@@ -71,6 +71,18 @@ public class InstructorController {
         return userDTO;
     }
 
+    @PostMapping("/update-profile")
+    public ResponseEntity<String> updateUser(@RequestBody CreateUserDTO userDTO, Authentication authentication) {
+        try {
+            Users user = userService.findUserByEmail(authentication.getName());
+            user.setDesignation(userDTO.getDesignation());
+            userService.updateUser(user);
+            return ResponseEntity.status(HttpStatus.CREATED).body("User updated successfully!");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Updation failed : " + e.getMessage());
+        }
+    }
+
     @GetMapping("/courses")
     public ResponseEntity<List<CourseInfoDTO>> viewCoursesForInstructor(Authentication authentication) {
 
