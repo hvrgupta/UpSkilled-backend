@@ -25,7 +25,7 @@ public class EmployeeCourseAuth {
 
         Course course = courseService.findCourseById(courseId);
 
-        if (course == null) {
+        if (course == null || course.getStatus().equals(Course.Status.INACTIVE)) {
             return ResponseEntity.badRequest().body("Invalid course ID");
         }
 

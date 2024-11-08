@@ -14,11 +14,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -76,16 +71,36 @@ public class InstructorController {
         return userDTO;
     }
 
-    @GetMapping("/courses")
-    public ResponseEntity<List<CourseInfoDTO>> viewCourses() {
+    @PostMapping("/update-profile")
+    public ResponseEntity<String> updateUser(@RequestBody CreateUserDTO userDTO, Authentication authentication) {
+        try {
+            Users user = userService.findUserByEmail(authentication.getName());
+            user.setDesignation(userDTO.getDesignation());
+            userService.updateUser(user);
+            return ResponseEntity.status(HttpStatus.CREATED).body("User updated successfully!");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Updation failed : " + e.getMessage());
+        }
+    }
 
-        List<CourseInfoDTO> courseList =  courseService.getAllCourses().stream().map((course -> {
+    @GetMapping("/courses")
+    public ResponseEntity<List<CourseInfoDTO>> viewCoursesForInstructor(Authentication authentication) {
+
+        String email = authentication.getName();
+        Users instructor = userService.findUserByEmail(email);
+
+        List<CourseInfoDTO> courseList =  courseService.findByInstructorId(instructor.getId())
+                .stream()
+                .filter(course -> course.getStatus().equals(Course.Status.ACTIVE))
+                .map((course -> {
             CourseInfoDTO courseInfoDTO = new CourseInfoDTO();
             courseInfoDTO.setId(course.getId());
             courseInfoDTO.setTitle(course.getTitle());
             courseInfoDTO.setDescription(course.getDescription());
             courseInfoDTO.setInstructorId(course.getInstructor().getId());
             courseInfoDTO.setInstructorName(course.getInstructor().getFirstName() + " " + course.getInstructor().getLastName());
+            courseInfoDTO.setName(course.getName());
+            courseInfoDTO.setStatus(course.getStatus());
             return courseInfoDTO;
         })).collect(Collectors.toList());
         return ResponseEntity.ok(courseList);
@@ -102,13 +117,14 @@ public class InstructorController {
             return authResponse;
         }
 
-
         CourseInfoDTO courseInfoDTO = new CourseInfoDTO();
         courseInfoDTO.setId(course.getId());
         courseInfoDTO.setTitle(course.getTitle());
         courseInfoDTO.setDescription(course.getDescription());
         courseInfoDTO.setInstructorId(course.getInstructor().getId());
         courseInfoDTO.setInstructorName(course.getInstructor().getFirstName() + " " + course.getInstructor().getLastName());
+        courseInfoDTO.setName(course.getName());
+        courseInfoDTO.setStatus(course.getStatus());
 
         return ResponseEntity.ok(courseInfoDTO);
     }
