@@ -319,8 +319,29 @@ public class EmployeeController {
         }
 
     }
+    /*
+        Get Assignments for the enrolled course
+    */
+    @GetMapping("/course/{courseId}/assignments")
+    public ResponseEntity<?> getAssignmentsForTheCourse(@PathVariable Long courseId, Authentication authentication) {
+        ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(courseId, authentication);
 
+        if (authResponse != null) {
+            return authResponse;
+        }
 
+        List<AssignmentResponseDTO> assignmentsList = assignmentService.getAssignmentsByCourse(courseId).stream()
+                .map(assignment -> {
+                    AssignmentResponseDTO assignmentResponseDTO = new AssignmentResponseDTO();
+                    assignmentResponseDTO.setTitle(assignment.getTitle());
+                    assignmentResponseDTO.setId(assignment.getId());
+                    assignmentResponseDTO.setDeadline(assignment.getDeadline());
+                    assignmentResponseDTO.setDescription(assignment.getDescription());
+                    return assignmentResponseDTO;
+                }).toList();
+
+        return ResponseEntity.ok(assignmentsList);
+    }
 
 
 }

@@ -312,7 +312,7 @@ public class InstructorController {
 
         long currentEpoch = System.currentTimeMillis();
 
-        if (currentEpoch > assignment.getDeadline()) {
+        if (currentEpoch < assignment.getDeadline()) {
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
                     .body("The deadline must be a future date.");
@@ -342,15 +342,14 @@ public class InstructorController {
 
         AssignmentResponseDTO assignmentResponseDTO = new AssignmentResponseDTO();
 
-        assignmentResponseDTO.setAssignmentID(assignment.getId());
-        assignmentResponseDTO.setAssignmentDescription(assignment.getDescription());
-        assignmentResponseDTO.setAssignmentDeadline(assignment.getDeadline());
-        assignmentResponseDTO.setAssignmentTitle(assignment.getTitle());
+        assignmentResponseDTO.setId(assignment.getId());
+        assignmentResponseDTO.setDescription(assignment.getDescription());
+        assignmentResponseDTO.setDeadline(assignment.getDeadline());
+        assignmentResponseDTO.setTitle(assignment.getTitle());
 
         return ResponseEntity.ok(assignmentResponseDTO);
 
     }
-
 
 
     // Update an assignment (only for instructors)
@@ -415,6 +414,27 @@ public class InstructorController {
         assignmentService.deleteAssignment(assignmentId);
 
         return ResponseEntity.ok("Assignment Deleted successfully");
+    }
+
+    @GetMapping("/course/{courseId}/assignments")
+    public ResponseEntity<?> getAssignmentsForTheCourse(@PathVariable Long courseId, Authentication authentication) {
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseId, authentication);
+
+        if (authResponse != null) {
+            return authResponse;
+        }
+
+        List<AssignmentResponseDTO> assignmentsList = assignmentService.getAssignmentsByCourse(courseId).stream()
+                .map(assignment -> {
+                    AssignmentResponseDTO assignmentResponseDTO = new AssignmentResponseDTO();
+                    assignmentResponseDTO.setTitle(assignment.getTitle());
+                    assignmentResponseDTO.setId(assignment.getId());
+                    assignmentResponseDTO.setDeadline(assignment.getDeadline());
+                    assignmentResponseDTO.setDescription(assignment.getDescription());
+                    return assignmentResponseDTO;
+                }).toList();
+
+        return ResponseEntity.ok(assignmentsList);
     }
 
     @GetMapping("/{courseID}/{assignmentId}/submissions")
