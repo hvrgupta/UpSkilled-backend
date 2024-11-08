@@ -95,7 +95,7 @@ public class AuthController {
             if(user == null) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User Not Found!");
             }
-
+            user.setPassword(userDTO.getPassword());
             user.setDesignation(userDTO.getDesignation());
             usersDetailsService.updateUser(user);
             return ResponseEntity.status(HttpStatus.CREATED).body("User updated successfully!");
