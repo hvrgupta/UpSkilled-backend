@@ -86,4 +86,21 @@ public class AuthController {
         }
         return "";
     }
+
+    @PostMapping("/update-profile")
+    public ResponseEntity<String> updateUser(@RequestBody CreateUserDTO userDTO, Authentication authentication) {
+        try {
+            Users user = usersDetailsService.findUserByEmail(authentication.getName());
+
+            if(user == null) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User Not Found!");
+            }
+
+            user.setDesignation(userDTO.getDesignation());
+            usersDetailsService.updateUser(user);
+            return ResponseEntity.status(HttpStatus.CREATED).body("User updated successfully!");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Updation failed : " + e.getMessage());
+        }
+    }
 }
