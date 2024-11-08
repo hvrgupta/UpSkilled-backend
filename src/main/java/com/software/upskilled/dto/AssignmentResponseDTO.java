@@ -7,8 +7,8 @@ import java.util.Date;
 @Data
 public class AssignmentResponseDTO
 {
-    long assignmentID;
-    String assignmentTitle;
-    String assignmentDescription;
-    long assignmentDeadline;
+    long id;
+    String title;
+    String description;
+    long deadline;
 }

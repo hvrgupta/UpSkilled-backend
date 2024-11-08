@@ -20,8 +20,6 @@ public class EmployeeCourseAuth {
     }
 
     public ResponseEntity<String> validateEmployeeForCourse(Long courseId, Authentication authentication) {
-        // Get the currently authenticated user (employee)
-
 
         Course course = courseService.findCourseById(courseId);
 
