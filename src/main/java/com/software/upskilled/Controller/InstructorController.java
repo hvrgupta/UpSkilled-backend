@@ -71,18 +71,6 @@ public class InstructorController {
         return userDTO;
     }
 
-    @PostMapping("/update-profile")
-    public ResponseEntity<String> updateUser(@RequestBody CreateUserDTO userDTO, Authentication authentication) {
-        try {
-            Users user = userService.findUserByEmail(authentication.getName());
-            user.setDesignation(userDTO.getDesignation());
-            userService.updateUser(user);
-            return ResponseEntity.status(HttpStatus.CREATED).body("User updated successfully!");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Updation failed : " + e.getMessage());
-        }
-    }
-
     @GetMapping("/courses")
     public ResponseEntity<List<CourseInfoDTO>> viewCoursesForInstructor(Authentication authentication) {
 
@@ -264,18 +252,10 @@ public class InstructorController {
             return ResponseEntity.badRequest().body("Only PDF Files are allowed.");
         }
 
-        String email = authentication.getName();
-        Users instructor = userService.findUserByEmail(email);
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseId, authentication);
 
-        Course course = courseService.findCourseById(courseId);
-
-        if (course == null) {
-            return ResponseEntity.badRequest().body("Invalid course ID");
-        }
-
-        // Check if the instructor is assigned to this course
-        if (!course.getInstructor().getId().equals(instructor.getId())) {
-            return ResponseEntity.status(403).body("You are not the instructor of this course");
+        if (authResponse != null) {
+            return authResponse;
         }
 
         return new ResponseEntity<>(fileService.uploadSyllabus(file,courseId), HttpStatus.OK);
@@ -346,6 +326,32 @@ public class InstructorController {
 
         return ResponseEntity.ok("Assignment Created successfully.");
     }
+
+    @GetMapping("/getAssignmentById/{assignmentId}")
+    public ResponseEntity<?> getAssignmentById(@PathVariable Long assignmentId, Authentication authentication) {
+
+        Assignment assignment = assignmentService.getAssignmentById(assignmentId);
+
+        if(assignment == null) return ResponseEntity.badRequest().body("Invalid Assignnment ID");
+
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(assignment.getCourse().getId(), authentication);
+
+        if (authResponse != null) {
+            return authResponse;
+        }
+
+        AssignmentResponseDTO assignmentResponseDTO = new AssignmentResponseDTO();
+
+        assignmentResponseDTO.setAssignmentID(assignment.getId());
+        assignmentResponseDTO.setAssignmentDescription(assignment.getDescription());
+        assignmentResponseDTO.setAssignmentDeadline(assignment.getDeadline());
+        assignmentResponseDTO.setAssignmentTitle(assignment.getTitle());
+
+        return ResponseEntity.ok(assignmentResponseDTO);
+
+    }
+
+
 
     // Update an assignment (only for instructors)
     @PutMapping("/{courseId}/assignment/{assignmentId}")
