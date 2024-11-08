@@ -1,12 +1,9 @@
 package com.software.upskilled.Controller;
 
-import com.amazonaws.Response;
+
 import com.software.upskilled.Entity.*;
-import com.software.upskilled.dto.AnnouncementDTO;
 import com.software.upskilled.dto.CourseMaterialDTO;
-import com.software.upskilled.dto.CourseDTO;
 import com.software.upskilled.dto.CourseInfoDTO;
-import com.software.upskilled.dto.CourseMaterialDTO;
 import com.software.upskilled.dto.CreateUserDTO;
 import com.software.upskilled.Entity.Announcement;
 import com.software.upskilled.Entity.Course;
@@ -85,13 +82,17 @@ public class EmployeeController {
     @GetMapping("/courses")
     public ResponseEntity<List<CourseInfoDTO>> viewCourses() {
 
-        List<CourseInfoDTO> courseList =  courseService.getAllCourses().stream().map((course -> {
+        List<CourseInfoDTO> courseList =  courseService.getAllCourses().stream()
+                .filter(course -> course.getStatus().equals(Course.Status.ACTIVE))
+                .map((course -> {
             CourseInfoDTO courseInfoDTO = new CourseInfoDTO();
             courseInfoDTO.setId(course.getId());
             courseInfoDTO.setTitle(course.getTitle());
             courseInfoDTO.setDescription(course.getDescription());
             courseInfoDTO.setInstructorId(course.getInstructor().getId());
             courseInfoDTO.setInstructorName(course.getInstructor().getFirstName() + " " + course.getInstructor().getLastName());
+            courseInfoDTO.setName(course.getName());
+            courseInfoDTO.setStatus(course.getStatus());
             return courseInfoDTO;
         })).collect(Collectors.toList());
         return ResponseEntity.ok(courseList);
@@ -108,13 +109,14 @@ public class EmployeeController {
             return authResponse;
         }
 
-
         CourseInfoDTO courseInfoDTO = new CourseInfoDTO();
         courseInfoDTO.setId(course.getId());
         courseInfoDTO.setTitle(course.getTitle());
         courseInfoDTO.setDescription(course.getDescription());
         courseInfoDTO.setInstructorId(course.getInstructor().getId());
         courseInfoDTO.setInstructorName(course.getInstructor().getFirstName() + " " + course.getInstructor().getLastName());
+        courseInfoDTO.setName(course.getName());
+        courseInfoDTO.setStatus(course.getStatus());
 
         return ResponseEntity.ok(courseInfoDTO);
     }

@@ -31,7 +31,7 @@ public class InstructorCourseAuth {
             return ResponseEntity.badRequest().body("Instructor not yet ACTIVE.");
         }
 
-        if (course == null) {
+        if (course == null || course.getStatus().equals(Course.Status.INACTIVE)){
             return ResponseEntity.badRequest().body("Invalid course ID");
         }
 

@@ -125,17 +125,17 @@ public class AdminController {
         userService.saveUser(instructor);
         return ResponseEntity.ok("User Rejected!");
     }
-
-//    @DeleteMapping("/delete/{instructorId}")
-//    public ResponseEntity<String> deleteInstructor(@PathVariable Long instructorId) {
-//        Users instructor = userService.findUserById(instructorId);
-//        if (instructor == null || !instructor.getRole().equals("INSTRUCTOR")) {
-//            return ResponseEntity.badRequest().body("Invalid instructor ID");
-//        }
-//        userService.deleteUser(instructor);
-//        return ResponseEntity.ok("User Removed!");
-//    }
-
+/*
+    @DeleteMapping("/delete/{instructorId}")
+    public ResponseEntity<String> deleteInstructor(@PathVariable Long instructorId) {
+        Users instructor = userService.findUserById(instructorId);
+        if (instructor == null || !instructor.getRole().equals("INSTRUCTOR")) {
+            return ResponseEntity.badRequest().body("Invalid instructor ID");
+        }
+        userService.deleteUser(instructor);
+        return ResponseEntity.ok("User Removed!");
+    }
+*/
     @PostMapping("/createCourse")
     public ResponseEntity<String> createNewCourse(@RequestBody CourseDTO courseDTO) {
         Users instructor = userService.findUserById(courseDTO.getInstructorId());
@@ -150,7 +150,9 @@ public class AdminController {
         Course newCourse = Course.builder()
                 .title(courseDTO.getTitle())
                 .description(courseDTO.getDescription())
-                .instructor(instructor).build();
+                .name(courseDTO.getName())
+                .instructor(instructor)
+                .status(Course.Status.ACTIVE).build();
 
         courseService.saveCourse(newCourse);
 
@@ -171,7 +173,7 @@ public class AdminController {
             return ResponseEntity.status(403).body("You are not the instructor of this course");
         }
 
-        if (instructor == null || (!instructor.getRole().equals("INSTRUCTOR") || !instructor.getStatus().toString().equalsIgnoreCase("ACTIVE"))) {
+        if (!instructor.getRole().equals("INSTRUCTOR") || !instructor.getStatus().toString().equalsIgnoreCase("ACTIVE")) {
             return ResponseEntity.badRequest().body("Invalid instructor ID");
         }
 
@@ -179,8 +181,14 @@ public class AdminController {
             return ResponseEntity.badRequest().body("Course title already exists.");
         }
 
-        course.setTitle(courseDTO.getTitle());
-        course.setDescription(courseDTO.getDescription());
+        if(!courseDTO.getTitle().isBlank())
+            course.setTitle(courseDTO.getTitle());
+
+        if(!courseDTO.getDescription().isBlank())
+            course.setDescription(courseDTO.getDescription());
+
+        if(!courseDTO.getDescription().isBlank())
+            course.setName(courseDTO.getName());
 
         courseService.saveCourse(course);
 
@@ -197,6 +205,8 @@ public class AdminController {
             courseInfoDTO.setDescription(course.getDescription());
             courseInfoDTO.setInstructorId(course.getInstructor().getId());
             courseInfoDTO.setInstructorName(course.getInstructor().getFirstName() + " " + course.getInstructor().getLastName());
+            courseInfoDTO.setName(course.getName());
+            courseInfoDTO.setStatus(course.getStatus());
             return courseInfoDTO;
         })).collect(Collectors.toList());
         return ResponseEntity.ok(courseList);
@@ -217,6 +227,8 @@ public class AdminController {
         courseInfoDTO.setDescription(course.getDescription());
         courseInfoDTO.setInstructorId(course.getInstructor().getId());
         courseInfoDTO.setInstructorName(course.getInstructor().getFirstName() + " " + course.getInstructor().getLastName());
+        courseInfoDTO.setName(course.getName());
+        courseInfoDTO.setStatus(course.getStatus());
 
         return ResponseEntity.ok(courseInfoDTO);
     }
