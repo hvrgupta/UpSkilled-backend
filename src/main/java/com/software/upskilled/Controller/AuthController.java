@@ -50,6 +50,10 @@ public class AuthController {
     @PostMapping("/signup")
     public ResponseEntity<String> registerUser(@RequestBody CreateUserDTO userDTO) {
         try {
+            // Check if email matches the required format
+            if (!userDTO.getEmail().matches("^[A-Za-z0-9._%+-]+@upskilled\\.com$")) {
+                return ResponseEntity.badRequest().body("Invalid email format. Email must be in the format username@upskilled.com");
+            }
             Users user = new Users();
             user.setEmail(userDTO.getEmail());
             user.setPassword(userDTO.getPassword());
@@ -80,6 +84,7 @@ public class AuthController {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(authRequest.getEmail(), authRequest.getPassword())
             );
+
             if(authentication.isAuthenticated()) {
                 Users user = usersDetailsService.findUserByEmail(authRequest.getEmail());
                 return jwtUtil.generateToken(user.getEmail(),user.getFirstName(),user.getLastName(),user.getRole(),user.getStatus());
