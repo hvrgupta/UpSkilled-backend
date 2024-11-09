@@ -5,6 +5,7 @@ import com.software.upskilled.dto.AuthRequest;
 import com.software.upskilled.dto.CreateUserDTO;
 import com.software.upskilled.service.UserService;
 import com.software.upskilled.utils.JWTUtil;
+import com.software.upskilled.utils.TokenBlackListService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +26,9 @@ public class AuthController {
 
     @Autowired
     private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private TokenBlackListService blacklistService;
 
     @Autowired
     private JWTUtil jwtUtil;
@@ -87,6 +91,13 @@ public class AuthController {
         return "";
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(@RequestHeader("Authorization") String authHeader) {
+        String token = authHeader.replace("Bearer ", "");
+        blacklistService.blacklistToken(token);
+        return ResponseEntity.ok("Logged out successfully");
+    }
+
     @PostMapping("/update-profile")
     public ResponseEntity<String> updateUser(@RequestBody CreateUserDTO userDTO, Authentication authentication) {
         try {
@@ -103,4 +114,6 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Updation failed : " + e.getMessage());
         }
     }
+
+
 }
