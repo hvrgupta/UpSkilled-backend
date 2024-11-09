@@ -10,6 +10,6 @@ public class GradeBookResponseDTO
     private int grade;
     private String feedback;
     private Date gradedDate;
-    private CreateUserDTO instructorDTO;
-    private SubmissionResponseDTO submissionResponseDTO;
+    private long instructorID;
+    private long submissionID;
 }

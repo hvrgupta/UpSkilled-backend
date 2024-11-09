@@ -12,5 +12,5 @@ public class SubmissionResponseDTO
     private String submission_url;
     private Date submission_at;
     private Submission.Status submission_status;
-    private AssignmentResponseDTO assignmentResponseDTO;
+    private long assignmentID;
 }

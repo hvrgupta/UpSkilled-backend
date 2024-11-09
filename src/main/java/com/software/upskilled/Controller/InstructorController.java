@@ -14,10 +14,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -75,15 +72,23 @@ public class InstructorController {
     }
 
     @GetMapping("/courses")
-    public ResponseEntity<List<CourseInfoDTO>> viewCourses() {
+    public ResponseEntity<List<CourseInfoDTO>> viewCoursesForInstructor(Authentication authentication) {
 
-        List<CourseInfoDTO> courseList =  courseService.getAllCourses().stream().map((course -> {
+        String email = authentication.getName();
+        Users instructor = userService.findUserByEmail(email);
+
+        List<CourseInfoDTO> courseList =  courseService.findByInstructorId(instructor.getId())
+                .stream()
+                .filter(course -> course.getStatus().equals(Course.Status.ACTIVE))
+                .map((course -> {
             CourseInfoDTO courseInfoDTO = new CourseInfoDTO();
             courseInfoDTO.setId(course.getId());
             courseInfoDTO.setTitle(course.getTitle());
             courseInfoDTO.setDescription(course.getDescription());
             courseInfoDTO.setInstructorId(course.getInstructor().getId());
             courseInfoDTO.setInstructorName(course.getInstructor().getFirstName() + " " + course.getInstructor().getLastName());
+            courseInfoDTO.setName(course.getName());
+            courseInfoDTO.setStatus(course.getStatus());
             return courseInfoDTO;
         })).collect(Collectors.toList());
         return ResponseEntity.ok(courseList);
@@ -100,13 +105,14 @@ public class InstructorController {
             return authResponse;
         }
 
-
         CourseInfoDTO courseInfoDTO = new CourseInfoDTO();
         courseInfoDTO.setId(course.getId());
         courseInfoDTO.setTitle(course.getTitle());
         courseInfoDTO.setDescription(course.getDescription());
         courseInfoDTO.setInstructorId(course.getInstructor().getId());
         courseInfoDTO.setInstructorName(course.getInstructor().getFirstName() + " " + course.getInstructor().getLastName());
+        courseInfoDTO.setName(course.getName());
+        courseInfoDTO.setStatus(course.getStatus());
 
         return ResponseEntity.ok(courseInfoDTO);
     }
@@ -193,9 +199,6 @@ public class InstructorController {
             @RequestBody AnnouncementDTO announcementDTO,
             Authentication authentication) {
 
-        String email = authentication.getName();
-        Users instructor = userService.findUserByEmail(email);
-
         Announcement announcement = announcementService.findAnnouncementById(announcementId);
 
         if (announcement == null) {
@@ -204,9 +207,10 @@ public class InstructorController {
 
         Course course = announcement.getCourse();
 
-        // Check if the instructor is assigned to the course of this announcement
-        if (!course.getInstructor().getId().equals(instructor.getId())) {
-            return ResponseEntity.status(403).body("You are not the instructor of this course");
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(course.getId(), authentication);
+
+        if (authResponse != null) {
+            return authResponse;
         }
 
         announcement.setTitle(announcementDTO.getTitle());
@@ -216,6 +220,31 @@ public class InstructorController {
         return ResponseEntity.ok("Announcement updated successfully");
     }
 
+    // Delete an existing announcement
+    @DeleteMapping("/deleteAnnouncementById/{announcementId}")
+    public ResponseEntity<String> deleteAnnouncement(
+            @PathVariable Long announcementId,
+            Authentication authentication) {
+
+        Announcement announcement = announcementService.findAnnouncementById(announcementId);
+
+        if (announcement == null) {
+            return ResponseEntity.badRequest().body("Announcement not found");
+        }
+
+        Course course = announcement.getCourse();
+
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(course.getId(), authentication);
+
+        if (authResponse != null) {
+            return authResponse;
+        }
+
+        announcementService.deleteAnnouncement(announcement.getId());
+
+        return ResponseEntity.ok("Announcement Deleted successfully");
+    }
+
     @PostMapping("/uploadSyllabus/{courseId}")
     public ResponseEntity<?> uploadSyllabus(@RequestParam("file") MultipartFile file, @PathVariable Long courseId, Authentication authentication) {
 
@@ -223,18 +252,10 @@ public class InstructorController {
             return ResponseEntity.badRequest().body("Only PDF Files are allowed.");
         }
 
-        String email = authentication.getName();
-        Users instructor = userService.findUserByEmail(email);
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseId, authentication);
 
-        Course course = courseService.findCourseById(courseId);
-
-        if (course == null) {
-            return ResponseEntity.badRequest().body("Invalid course ID");
-        }
-
-        // Check if the instructor is assigned to this course
-        if (!course.getInstructor().getId().equals(instructor.getId())) {
-            return ResponseEntity.status(403).body("You are not the instructor of this course");
+        if (authResponse != null) {
+            return authResponse;
         }
 
         return new ResponseEntity<>(fileService.uploadSyllabus(file,courseId), HttpStatus.OK);
@@ -306,6 +327,31 @@ public class InstructorController {
         return ResponseEntity.ok("Assignment Created successfully.");
     }
 
+    @GetMapping("/getAssignmentById/{assignmentId}")
+    public ResponseEntity<?> getAssignmentById(@PathVariable Long assignmentId, Authentication authentication) {
+
+        Assignment assignment = assignmentService.getAssignmentById(assignmentId);
+
+        if(assignment == null) return ResponseEntity.badRequest().body("Invalid Assignnment ID");
+
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(assignment.getCourse().getId(), authentication);
+
+        if (authResponse != null) {
+            return authResponse;
+        }
+
+        AssignmentResponseDTO assignmentResponseDTO = new AssignmentResponseDTO();
+
+        assignmentResponseDTO.setId(assignment.getId());
+        assignmentResponseDTO.setDescription(assignment.getDescription());
+        assignmentResponseDTO.setDeadline(assignment.getDeadline());
+        assignmentResponseDTO.setTitle(assignment.getTitle());
+
+        return ResponseEntity.ok(assignmentResponseDTO);
+
+    }
+
+
     // Update an assignment (only for instructors)
     @PutMapping("/{courseId}/assignment/{assignmentId}")
     public ResponseEntity<String> updateAssignment(@PathVariable Long courseId,
@@ -370,6 +416,27 @@ public class InstructorController {
         return ResponseEntity.ok("Assignment Deleted successfully");
     }
 
+    @GetMapping("/course/{courseId}/assignments")
+    public ResponseEntity<?> getAssignmentsForTheCourse(@PathVariable Long courseId, Authentication authentication) {
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseId, authentication);
+
+        if (authResponse != null) {
+            return authResponse;
+        }
+
+        List<AssignmentResponseDTO> assignmentsList = assignmentService.getAssignmentsByCourse(courseId).stream()
+                .map(assignment -> {
+                    AssignmentResponseDTO assignmentResponseDTO = new AssignmentResponseDTO();
+                    assignmentResponseDTO.setTitle(assignment.getTitle());
+                    assignmentResponseDTO.setId(assignment.getId());
+                    assignmentResponseDTO.setDeadline(assignment.getDeadline());
+                    assignmentResponseDTO.setDescription(assignment.getDescription());
+                    return assignmentResponseDTO;
+                }).toList();
+
+        return ResponseEntity.ok(assignmentsList);
+    }
+
     @GetMapping("/{courseID}/{assignmentId}/submissions")
     public ResponseEntity<?> getAssignmentSubmissions(@PathVariable Long courseID, @PathVariable Long assignmentId, Authentication authentication)
     {
@@ -404,16 +471,10 @@ public class InstructorController {
                     submissionResponseDTO.setSubmission_url( assignmentSubmission.getSubmissionUrl() );
                     submissionResponseDTO.setSubmission_at( assignmentSubmission.getSubmittedAt() );
                     submissionResponseDTO.setSubmission_status( assignmentSubmission.getStatus() );
+                    submissionResponseDTO.setAssignmentID(assignmentDetails.getId());
 
-                    //Creating the appropriate Assignment Response Details object as well
-                    AssignmentResponseDTO assignmentResponseDTO = new AssignmentResponseDTO();
-                    assignmentResponseDTO.setAssignmentID( assignmentDetails.getId() );
-                    assignmentResponseDTO.setAssignmentTitle( assignmentDetails.getTitle() );
-                    assignmentResponseDTO.setAssignmentDescription( assignmentDetails.getDescription() );
-                    assignmentResponseDTO.setAssignmentDeadline(assignmentDetails.getDeadline() );
-
-                    //Setting the assignment details in the submission response
-                    submissionResponseDTO.setAssignmentResponseDTO( assignmentResponseDTO );
+                    //Adding DTO to the list
+                    submissionResponseDTOList.add( submissionResponseDTO );
                 });
                 return ResponseEntity.ok(submissionResponseDTOList);
             }
@@ -469,35 +530,8 @@ public class InstructorController {
                 gradeBookResponseDTO.setGrade( gradeBookDetails.getGrade() );
                 gradeBookResponseDTO.setFeedback( gradeBookDetails.getFeedback() );
                 gradeBookResponseDTO.setGradedDate( gradeBookDetails.getGradedAt() );
-
-                //Creating the instructor DTO object properties
-                CreateUserDTO instructorDTO = new CreateUserDTO();
-
-                instructorDTO.setId(instructor.getId() );
-                instructorDTO.setFirstName(instructorDTO.getFirstName() );
-                instructorDTO.setLastName(instructorDTO.getLastName() );
-                gradeBookResponseDTO.setInstructorDTO( instructorDTO );
-
-                //Since, our Submission request is linked with other tables, we have to create DTO objects in order
-                //felicitate the transfer of the data,Therefore creating the submission response DTO which will have
-                //the necessary properties
-                SubmissionResponseDTO submissionResponseDTO = new SubmissionResponseDTO();
-                submissionResponseDTO.setSubmission_id( uploadedSubmissionDetails.getId() );
-                submissionResponseDTO.setSubmission_url( uploadedSubmissionDetails.getSubmissionUrl() );
-                submissionResponseDTO.setSubmission_at( uploadedSubmissionDetails.getSubmittedAt() );
-                submissionResponseDTO.setSubmission_status( uploadedSubmissionDetails.getStatus() );
-
-                //Creating the appropriate Assignment Response Details object as well
-                AssignmentResponseDTO assignmentResponseDTO = new AssignmentResponseDTO();
-                assignmentResponseDTO.setAssignmentID( uploadedSubmissionDetails.getAssignment().getId() );
-                assignmentResponseDTO.setAssignmentTitle( uploadedSubmissionDetails.getAssignment().getTitle() );
-                assignmentResponseDTO.setAssignmentDescription( uploadedSubmissionDetails.getAssignment().getDescription() );
-                assignmentResponseDTO.setAssignmentDeadline( uploadedSubmissionDetails.getAssignment().getDeadline() );
-
-                //Setting the assignment response DTO in the submission response and then submitting the submission
-                //response in the GradeBook DTO
-                submissionResponseDTO.setAssignmentResponseDTO( assignmentResponseDTO );
-                gradeBookResponseDTO.setSubmissionResponseDTO( submissionResponseDTO );
+                gradeBookResponseDTO.setInstructorID( instructor.getId() );
+                gradeBookResponseDTO.setSubmissionID( uploadedSubmissionDetails.getId() );
 
                 return ResponseEntity.ok( gradeBookResponseDTO );
 
@@ -506,23 +540,21 @@ public class InstructorController {
 
     }
 
-    @PostMapping("/{courseID}/assignments/{assignmentId}/submissions/{submissionID}/GradeBook/GradeAssignment")
-    public ResponseEntity<?> submitGradesToGradeBook(@PathVariable Long assignmentId, @PathVariable Long courseID,
-                                                     @PathVariable Long submissionID, Authentication authentication, @RequestBody GradeBookRequestDTO gradingDetails)
+    @PostMapping("/GradeBook/GradeAssignment")
+    public ResponseEntity<?> submitGradesToGradeBook(@RequestParam("submissionID") String submissionID, @RequestParam("courseID") String courseID, Authentication authentication, @RequestBody GradeBookRequestDTO gradingDetails)
     {
         //Obtaining the email of the user from the authentication object
         String email = authentication.getName();
         //Obtaining the instructor details
         Users instructor = userService.findUserByEmail(email);
-
-        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseID, authentication);
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(Long.parseLong( courseID ), authentication);
 
         if (authResponse != null) {
             return authResponse;
         }
 
         //Get the submission details associated with the ID
-        Submission uploadedSubmissionDetails = submissionService.getSubmissionByID( submissionID );
+        Submission uploadedSubmissionDetails = submissionService.getSubmissionByID( Long.parseLong( submissionID ));
         if( uploadedSubmissionDetails == null )
             return ResponseEntity.badRequest().body("Submission not found");
         else
@@ -540,11 +572,58 @@ public class InstructorController {
                         .instructor(instructor).build();
 
                 //Provide the GradeBook submission to the GradeBook service so that it can be stored in the database
-                gradeBookService.saveGradeBookSubmission( gradeBookSubmission );
-                return ResponseEntity.ok( gradeBookSubmission );
+                Gradebook submittedGradeBookSubmission = gradeBookService.saveGradeBookSubmission( gradeBookSubmission );
 
+                //Create GradeBook response DTO object
+                GradeBookResponseDTO gradeBookResponseDTO = new GradeBookResponseDTO();
+                gradeBookResponseDTO.setGrade( submittedGradeBookSubmission.getGrade() );
+                gradeBookResponseDTO.setFeedback( submittedGradeBookSubmission.getFeedback() );
+                gradeBookResponseDTO.setGradedDate( submittedGradeBookSubmission.getGradedAt() );
+                gradeBookResponseDTO.setSubmissionID( uploadedSubmissionDetails.getId() );
+                gradeBookResponseDTO.setInstructorID( instructor.getId() );
+
+
+                //Create
+                return ResponseEntity.ok( gradeBookResponseDTO );
             }
         }
+    }
+
+    @PutMapping("/GradeBook/updateGradeAssignment")
+    public ResponseEntity<?> updateGradeDetails( @RequestBody GradeBookRequestDTO gradeBookRequestDTO,
+                                                 @RequestParam("gradingID") long gradingID,
+                                                 Authentication authentication)
+    {
+        //Getting the courseID details from the grading ID
+        Gradebook gradeBookDetails = gradeBookService.getGradeBookByID( gradingID );
+        //Getting the submission and from there getting the course ID
+        long courseID = gradeBookDetails.getSubmission().getAssignment().getCourse().getId();
+        //Validating the instructor
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseID, authentication);
+        if (authResponse != null) {
+            return authResponse;
+        }
+
+        //Updating the values'
+        gradeBookDetails.setGrade(gradeBookRequestDTO.getGrade() );
+        gradeBookDetails.setFeedback(gradeBookDetails.getFeedback() );
+
+        //Saving the updated value into the database
+        gradeBookService.saveGradeBookSubmission( gradeBookDetails );
+
+        //Set the GradeBook Response DT
+        GradeBookResponseDTO gradeBookResponseDTO = new GradeBookResponseDTO();
+        //Setting the values
+        gradeBookResponseDTO.setGrade(gradeBookRequestDTO.getGrade() );
+        gradeBookResponseDTO.setFeedback(gradeBookRequestDTO.getFeedback());
+        gradeBookResponseDTO.setInstructorID( gradeBookDetails.getInstructor().getId() );
+        gradeBookResponseDTO.setSubmissionID( gradeBookDetails.getSubmission().getId() );
+        gradeBookResponseDTO.setGradedDate( gradeBookService.getGradeBookByID( gradeBookDetails.getId() ).getGradedAt() );
+
+
+        //Saving the new details into the database and sending the response object back
+        return new ResponseEntity<>( gradeBookResponseDTO, HttpStatus.OK );
+
     }
 
     @PostMapping("/uploadCourseMaterial/{courseId}")
@@ -695,4 +774,5 @@ public class InstructorController {
             return ResponseEntity.status(200).body("Failed to delete the existing course material, Please try again later" );
         }
     }
+
 }

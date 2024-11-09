@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 import java.util.Set;
 import java.util.List;
 
+import java.util.Set;
+
 @Service
 public class CourseService {
     @Autowired
@@ -25,4 +27,6 @@ public class CourseService {
     public Course findByTitle(String title) { return courseRepository.findByTitle(title); }
 
     public List<Course> getAllCourses() { return courseRepository.findAll(); }
+
+    public List<Course> findByInstructorId(Long id){ return courseRepository.findByInstructorId(id); }
 }
