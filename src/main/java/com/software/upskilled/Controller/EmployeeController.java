@@ -79,10 +79,17 @@ public class EmployeeController {
         return userDTO;
     }
     @GetMapping("/courses")
-    public ResponseEntity<List<CourseInfoDTO>> viewCourses() {
+    public ResponseEntity<List<CourseInfoDTO>> viewCourses(Authentication authentication) {
+
+        Users user = userService.findUserByEmail(authentication.getName());
+
+        Set<Long> enrolledCourseIds = user.getEnrollments().stream()
+                .map(enrollment -> enrollment.getCourse().getId())  // Get the course ID from enrollments
+                .collect(Collectors.toSet());
 
         List<CourseInfoDTO> courseList =  courseService.getAllCourses().stream()
                 .filter(course -> course.getStatus().equals(Course.Status.ACTIVE))
+                .filter(course -> !enrolledCourseIds.contains(course.getId()))
                 .map((course -> {
             CourseInfoDTO courseInfoDTO = new CourseInfoDTO();
             courseInfoDTO.setId(course.getId());
