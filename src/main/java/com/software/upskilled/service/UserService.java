@@ -49,6 +49,11 @@ public class UserService implements UserDetailsService {
         userRepository.save(appUser);
     }
 
+    public void updateUser(Users appUser) throws Exception {
+        appUser.setPassword(passwordEncoder.encode(appUser.getPassword()));
+        userRepository.save(appUser);
+    }
+
     public Users findUserById(Long id) {
         return userRepository.findById(id).orElse(null);
     }

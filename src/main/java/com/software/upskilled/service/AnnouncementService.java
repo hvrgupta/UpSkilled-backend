@@ -23,4 +23,8 @@ public class AnnouncementService {
     public Set<Announcement> getAnnouncementsByCourseId(Long courseId) {
         return announcementRepository.findByCourseId(courseId);
     }
+
+    public void deleteAnnouncement(Long id) {
+        announcementRepository.deleteById(id);
+    }
 }

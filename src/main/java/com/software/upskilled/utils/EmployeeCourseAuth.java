@@ -20,12 +20,10 @@ public class EmployeeCourseAuth {
     }
 
     public ResponseEntity<String> validateEmployeeForCourse(Long courseId, Authentication authentication) {
-        // Get the currently authenticated user (employee)
-
 
         Course course = courseService.findCourseById(courseId);
 
-        if (course == null) {
+        if (course == null || course.getStatus().equals(Course.Status.INACTIVE)) {
             return ResponseEntity.badRequest().body("Invalid course ID");
         }
 

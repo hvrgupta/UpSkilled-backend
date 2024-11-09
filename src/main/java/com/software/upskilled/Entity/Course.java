@@ -26,6 +26,9 @@ public class Course {
     @Column(nullable = false, length = 5000)
     private String description;
 
+    @Column(nullable = false)
+    private String name;
+
     @CreationTimestamp
     @Column(updatable = false, name = "created_at")
     private Date createdAt;
@@ -36,6 +39,10 @@ public class Course {
 
     @Column(length = 5000)
     private String syllabusUrl;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Status status;
 
     @ManyToOne
     @JoinColumn(name = "instructor_id")
@@ -56,4 +63,9 @@ public class Course {
 
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL)
     private Set<Assignment> assignments;
+
+    public enum Status {
+        ACTIVE,
+        INACTIVE
+    }
 }
