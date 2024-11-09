@@ -25,6 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -330,17 +331,143 @@ public class EmployeeController {
             return authResponse;
         }
 
+        //Get the employee details
+        Users employeeDetails = userService.findUserByEmail( authentication.getName() );
         List<AssignmentResponseDTO> assignmentsList = assignmentService.getAssignmentsByCourse(courseId).stream()
-                .map(assignment -> {
+                .map(assignment ->
+                {
+                    //Get the submission of the assignment pertaining to the User
+                    List<Submission> assignmentSubmissionOfUser = assignment.getSubmissions().stream().filter( assignmentSubmission ->{
+                        return Objects.equals(assignmentSubmission.getEmployee().getId(), employeeDetails.getId());
+                    }).toList();
+
+
                     AssignmentResponseDTO assignmentResponseDTO = new AssignmentResponseDTO();
                     assignmentResponseDTO.setTitle(assignment.getTitle());
                     assignmentResponseDTO.setId(assignment.getId());
                     assignmentResponseDTO.setDeadline(assignment.getDeadline());
                     assignmentResponseDTO.setDescription(assignment.getDescription());
+
+                    //Check if there are any submissions posted by the user for this assignment
+                    //If no submissions, then pass -1 to the frontend
+                    if( assignmentSubmissionOfUser.isEmpty() )
+                        assignmentResponseDTO.setGrade(-1);
+
+                    else
+                    {
+                        Submission assignmentSubmission = assignmentSubmissionOfUser.get(0);
+                        //Check if the submission has not been graded. If the assignment has not been
+                        //graded, then send 101 to the frontend.
+                        if ( !assignmentSubmission.getStatus().equals( Submission.Status.GRADED ) )
+                            assignmentResponseDTO.setGrade(101);
+                        else
+                            assignmentResponseDTO.setGrade( assignmentSubmission.getGrade().getGrade() );
+                    }
                     return assignmentResponseDTO;
                 }).toList();
 
         return ResponseEntity.ok(assignmentsList);
+    }
+
+
+    @GetMapping("/course/{courseId}/assignments/{assignmentId}")
+    public ResponseEntity<?> getParticularAssignmentDetails( @PathVariable Long courseId, @PathVariable Long assignmentId, Authentication authentication )
+    {
+        ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(courseId, authentication);
+        if (authResponse != null) {
+            return authResponse;
+        }
+        //Get the employee details
+        Users employeeDetails = userService.findUserByEmail( authentication.getName() );
+        //Get the assignment details
+        Assignment particularAssignment = assignmentService.getAssignmentById( assignmentId );
+
+        //Check if there are any submissions related to this assignment
+        //Get the submission of the assignment pertaining to the User
+        List<Submission> assignmentSubmissionOfUser = particularAssignment.getSubmissions().stream().filter( assignmentSubmission ->{
+            return Objects.equals(assignmentSubmission.getEmployee().getId(), employeeDetails.getId());
+        }).toList();
+
+        AssignmentResponseDTO assignmentResponseDTO = new AssignmentResponseDTO();
+        //If submission exist, then get the submission details
+        if( !assignmentSubmissionOfUser.isEmpty() )
+        {
+            Submission assignmentSubmission = assignmentSubmissionOfUser.get(0);
+            SubmissionResponseDTO submissionResponseDTO = new SubmissionResponseDTO();
+            //Fetch GradeBook Details if the assignment has been graded.
+            if( assignmentSubmission.getStatus().equals( Submission.Status.GRADED ) )
+            {
+                //Get GradeBook for the submission
+                Gradebook submissionGradeBook = assignmentSubmission.getGrade();
+                //Create the SubmissionResponse GradeBook DTO object
+                //Setting the values of the DTO Object
+                submissionResponseDTO.setSubmission_id( assignmentSubmission.getId() );
+                submissionResponseDTO.setSubmission_url( assignmentSubmission.getSubmissionUrl() );
+                submissionResponseDTO.setSubmission_at( assignmentSubmission.getSubmittedAt() );
+                submissionResponseDTO.setSubmission_status( assignmentSubmission.getStatus() );
+                submissionResponseDTO.setAssignmentID( particularAssignment.getId() );
+                submissionResponseDTO.setGradeBookId( submissionGradeBook.getId() );
+
+                //Setting the grade in the assignment dto object
+                assignmentResponseDTO.setGrade( submissionGradeBook.getGrade() );
+
+                //Create the GradeBook DTO Object
+
+                GradeBookResponseDTO gradeBookResponseDTO = new GradeBookResponseDTO();
+
+                gradeBookResponseDTO.setGrade( submissionGradeBook.getGrade() );
+                gradeBookResponseDTO.setSubmissionID( assignmentSubmission.getId() );
+                gradeBookResponseDTO.setFeedback( submissionGradeBook.getFeedback() );
+                gradeBookResponseDTO.setInstructorID( submissionGradeBook.getInstructor().getId() );
+                gradeBookResponseDTO.setGradedDate( submissionGradeBook.getGradedAt() );
+
+                //Add the GradeBook DTO object to the submission response DTO Object
+                submissionResponseDTO.setGradeBook( gradeBookResponseDTO );
+            }
+            else
+            {
+                //Setting the values of the DTO Object
+                submissionResponseDTO.setSubmission_id( assignmentSubmission.getId() );
+                submissionResponseDTO.setSubmission_url( assignmentSubmission.getSubmissionUrl() );
+                submissionResponseDTO.setSubmission_at( assignmentSubmission.getSubmittedAt() );
+                submissionResponseDTO.setSubmission_status( assignmentSubmission.getStatus() );
+                submissionResponseDTO.setAssignmentID( particularAssignment.getId() );
+                //-1 indicates that the GradeBook doesn't exist
+                submissionResponseDTO.setGradeBookId( assignmentSubmission.getGrade().getId() );
+                submissionResponseDTO.setGradeBook( null );
+
+                //Setting the grade in the assignment dto object
+                //Check if the submission has not been graded. If the assignment has not been
+                //graded, then send 101 to the frontend.
+                assignmentResponseDTO.setGrade( 101 );
+            }
+
+            //Setting the values of the assignmentDTO object
+            assignmentResponseDTO.setId(particularAssignment.getId() );
+            assignmentResponseDTO.setTitle(particularAssignment.getTitle() );
+            assignmentResponseDTO.setDescription(particularAssignment.getDescription() );
+            assignmentResponseDTO.setDeadline(particularAssignment.getDeadline() );
+            assignmentResponseDTO.setSubmissionDetails( submissionResponseDTO );
+
+            return ResponseEntity.ok( assignmentResponseDTO );
+        }
+        else {
+            //Check if there are any submissions posted by the user for this assignment
+            //If no submissions, then pass -1 to the frontend
+            //Setting the values of the assignmentDTO object
+            assignmentResponseDTO.setId(particularAssignment.getId() );
+            assignmentResponseDTO.setTitle(particularAssignment.getTitle() );
+            assignmentResponseDTO.setDescription(particularAssignment.getDescription() );
+            assignmentResponseDTO.setDeadline(particularAssignment.getDeadline() );
+            //Setting the grade in the assignment dto object
+            assignmentResponseDTO.setGrade( -1 );
+            return ResponseEntity.ok( assignmentResponseDTO );
+        }
+
+        //Check if the
+
+
+
     }
 
 

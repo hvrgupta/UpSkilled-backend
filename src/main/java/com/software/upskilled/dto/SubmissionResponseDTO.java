@@ -1,5 +1,6 @@
 package com.software.upskilled.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.software.upskilled.Entity.Submission;
 import lombok.Data;
 
@@ -14,5 +15,6 @@ public class SubmissionResponseDTO
     private Submission.Status submission_status;
     private long assignmentID;
     private long gradeBookId;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     GradeBookResponseDTO gradeBook;
 }
