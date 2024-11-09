@@ -97,6 +97,29 @@ public class EmployeeController {
         return ResponseEntity.ok(courseList);
     }
 
+    @GetMapping("/enrolledCourses")
+    public ResponseEntity<List<CourseInfoDTO>> viewEnrolledCourses(Authentication authentication) {
+
+        String email = authentication.getName();
+        Users employee = userService.findUserByEmail(email);
+
+        List<CourseInfoDTO> courseList =  employee.getEnrollments().stream()
+                .map(Enrollment::getCourse)
+                .filter(course -> course.getStatus().equals(Course.Status.ACTIVE))
+                .map((course -> {
+                    CourseInfoDTO courseInfoDTO = new CourseInfoDTO();
+                    courseInfoDTO.setId(course.getId());
+                    courseInfoDTO.setTitle(course.getTitle());
+                    courseInfoDTO.setDescription(course.getDescription());
+                    courseInfoDTO.setInstructorId(course.getInstructor().getId());
+                    courseInfoDTO.setInstructorName(course.getInstructor().getFirstName() + " " + course.getInstructor().getLastName());
+                    courseInfoDTO.setName(course.getName());
+                    courseInfoDTO.setStatus(course.getStatus());
+                    return courseInfoDTO;
+                })).collect(Collectors.toList());
+        return ResponseEntity.ok(courseList);
+    }
+
     @GetMapping("/course/{courseId}")
     public ResponseEntity<?> getCourseDetails(@PathVariable Long courseId, Authentication authentication) {
 
@@ -128,7 +151,7 @@ public class EmployeeController {
         Users employee = userService.findUserByEmail(email);
         Course course = courseService.findCourseById(courseId);
 
-        if (course == null) {
+        if (course == null || course.getStatus().equals(Course.Status.INACTIVE)) {
             return ResponseEntity.badRequest().body("Invalid course ID");
         }
 
@@ -343,5 +366,28 @@ public class EmployeeController {
         return ResponseEntity.ok(assignmentsList);
     }
 
+    /* Get assignment for the enrolled course by Id */
+    @GetMapping("/getAssignmentById/{assignmentId}")
+    public ResponseEntity<?> getAssignmentById(@PathVariable Long assignmentId, Authentication authentication) {
+
+        Assignment assignment = assignmentService.getAssignmentById(assignmentId);
+
+        if(assignment == null) return ResponseEntity.badRequest().body("Invalid Assignnment ID");
+
+        ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(assignment.getCourse().getId(), authentication);
+
+        if (authResponse != null) {
+            return authResponse;
+        }
+
+        AssignmentResponseDTO assignmentResponseDTO = new AssignmentResponseDTO();
+
+        assignmentResponseDTO.setId(assignment.getId());
+        assignmentResponseDTO.setDescription(assignment.getDescription());
+        assignmentResponseDTO.setDeadline(assignment.getDeadline());
+        assignmentResponseDTO.setTitle(assignment.getTitle());
+
+        return ResponseEntity.ok(assignmentResponseDTO);
+    }
 
 }
