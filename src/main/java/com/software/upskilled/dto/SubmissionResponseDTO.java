@@ -13,4 +13,6 @@ public class SubmissionResponseDTO
     private Date submission_at;
     private Submission.Status submission_status;
     private long assignmentID;
+    private long gradeBookId;
+    GradeBookResponseDTO gradeBook;
 }

@@ -407,6 +407,31 @@ public class InstructorController {
                     submissionResponseDTO.setSubmission_at( assignmentSubmission.getSubmittedAt() );
                     submissionResponseDTO.setSubmission_status( assignmentSubmission.getStatus() );
                     submissionResponseDTO.setAssignmentID(assignmentDetails.getId());
+                    //check if the submission response has a GradeBook
+                    if( assignmentSubmission.getGrade() != null )
+                    {
+                        submissionResponseDTO.setGradeBookId( assignmentSubmission.getGrade().getId() );
+
+                        //Creating  the GradeBook DTO object to populate the grades
+                        GradeBookResponseDTO gradeBookResponseDTO = new GradeBookResponseDTO();
+                        //Get the Grade object associated with the particular submission
+                        Gradebook assignmentSubmissionGradeBook = assignmentSubmission.getGrade();
+                        //Adding the details
+                        gradeBookResponseDTO.setGrade( assignmentSubmissionGradeBook.getGrade() );
+                        gradeBookResponseDTO.setFeedback(assignmentSubmissionGradeBook.getFeedback() );
+                        gradeBookResponseDTO.setSubmissionID( assignmentSubmission.getId() );
+                        gradeBookResponseDTO.setInstructorID( assignmentSubmissionGradeBook.getInstructor().getId() );
+                        gradeBookResponseDTO.setGradedDate( assignmentSubmissionGradeBook.getGradedAt() );
+
+                        //Adding the GradeBook Response DTO to the submission response DTO
+                        submissionResponseDTO.setGradeBook( gradeBookResponseDTO );
+                    }
+                    else
+                    {
+                        //Setting GradeBook ID as -1 means that no GradeBook Submission exists
+                        submissionResponseDTO.setGradeBookId(-1);
+                        submissionResponseDTO.setGradeBook( null );
+                    }
 
                     //Adding DTO to the list
                     submissionResponseDTOList.add( submissionResponseDTO );
@@ -509,12 +534,18 @@ public class InstructorController {
                 //Provide the GradeBook submission to the GradeBook service so that it can be stored in the database
                 Gradebook submittedGradeBookSubmission = gradeBookService.saveGradeBookSubmission( gradeBookSubmission );
 
+                //Also, we have to update the submission Status to Graded so that it is reflected.
+                //Modifying the Grading status of the uploaded submission
+                uploadedSubmissionDetails.setStatus( Submission.Status.GRADED );
+                //Saving the submission details in the database
+                Submission modifiedUploadedSubmissionDetails = submissionService.saveSubmissionDetails( uploadedSubmissionDetails );
+
                 //Create GradeBook response DTO object
                 GradeBookResponseDTO gradeBookResponseDTO = new GradeBookResponseDTO();
                 gradeBookResponseDTO.setGrade( submittedGradeBookSubmission.getGrade() );
                 gradeBookResponseDTO.setFeedback( submittedGradeBookSubmission.getFeedback() );
                 gradeBookResponseDTO.setGradedDate( submittedGradeBookSubmission.getGradedAt() );
-                gradeBookResponseDTO.setSubmissionID( uploadedSubmissionDetails.getId() );
+                gradeBookResponseDTO.setSubmissionID( modifiedUploadedSubmissionDetails.getId() );
                 gradeBookResponseDTO.setInstructorID( instructor.getId() );
 
 
