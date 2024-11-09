@@ -3,6 +3,7 @@ package com.software.upskilled.config;
 
 import com.software.upskilled.service.UserService;
 import com.software.upskilled.utils.JWTUtil;
+import com.software.upskilled.utils.TokenBlackListService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,6 +27,9 @@ public class JwtFilter extends OncePerRequestFilter {
     @Autowired
     private UserService myUserDetailsService;
 
+    @Autowired
+    private TokenBlackListService blacklistService;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
@@ -37,6 +41,12 @@ public class JwtFilter extends OncePerRequestFilter {
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             jwt = authorizationHeader.substring(7);
             email = jwtUtil.extractUsername(jwt);
+
+            if (blacklistService.isTokenBlacklisted(jwt)) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                return;
+            }
+
         }
 
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
