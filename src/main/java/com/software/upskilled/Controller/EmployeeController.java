@@ -128,15 +128,9 @@ public class EmployeeController {
     }
 
     @GetMapping("/course/{courseId}")
-    public ResponseEntity<?> getCourseDetails(@PathVariable Long courseId, Authentication authentication) {
+    public ResponseEntity<?> getCourseDetails(@PathVariable Long courseId) {
 
         Course course = courseService.findCourseById(courseId);
-
-        ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(courseId,authentication);
-
-        if (authResponse != null) {
-            return authResponse;
-        }
 
         CourseInfoDTO courseInfoDTO = new CourseInfoDTO();
         courseInfoDTO.setId(course.getId());
