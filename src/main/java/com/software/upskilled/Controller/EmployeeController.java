@@ -143,6 +143,25 @@ public class EmployeeController {
 
         return ResponseEntity.ok(courseInfoDTO);
     }
+
+    @GetMapping("/enrollment/{courseId}")
+    public ResponseEntity<?> checkEnrollment(@PathVariable Long courseId, Authentication authentication) {
+        String email = authentication.getName();
+        Users employee = userService.findUserByEmail(email);
+
+        Course course = courseService.findCourseById(courseId);
+
+        if (course == null || course.getStatus().equals(Course.Status.INACTIVE)) {
+            return ResponseEntity.badRequest().body("Invalid course ID");
+        }
+
+        if (course.getEnrollments().stream().noneMatch(enrollment -> enrollment.getEmployee().equals(employee))) {
+            return ResponseEntity.ok("Unenrolled");
+        }
+
+        return ResponseEntity.ok("Enrolled");
+    }
+
     
     @PostMapping("/enroll")
     public ResponseEntity<String> enrollInCourse(
