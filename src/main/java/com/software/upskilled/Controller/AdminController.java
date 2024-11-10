@@ -149,6 +149,10 @@ public class AdminController {
             return ResponseEntity.badRequest().body("Course title already exists.");
         }
 
+        if(courseDTO.getTitle().isBlank() || courseDTO.getDescription().isBlank() || courseDTO.getName().isBlank()) {
+            return ResponseEntity.badRequest().body("Title, description or name missing!");
+        }
+
         Course newCourse = Course.builder()
                 .title(courseDTO.getTitle())
                 .description(courseDTO.getDescription())
@@ -183,14 +187,10 @@ public class AdminController {
             return ResponseEntity.badRequest().body("Course title already exists.");
         }
 
-        if(!courseDTO.getTitle().isBlank())
-            course.setTitle(courseDTO.getTitle());
+        if(courseDTO.getTitle().isBlank() || courseDTO.getDescription().isBlank() || courseDTO.getName().isBlank()) {
+            return ResponseEntity.badRequest().body("Title, description or name missing!");
+        }
 
-        if(!courseDTO.getDescription().isBlank())
-            course.setDescription(courseDTO.getDescription());
-
-        if(!courseDTO.getDescription().isBlank())
-            course.setName(courseDTO.getName());
 
         courseService.saveCourse(course);
 
