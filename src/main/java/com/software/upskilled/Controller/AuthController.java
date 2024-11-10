@@ -50,22 +50,35 @@ public class AuthController {
     @PostMapping("/signup")
     public ResponseEntity<String> registerUser(@RequestBody CreateUserDTO userDTO) {
         try {
-            // Check if email matches the required format
-//            if (!userDTO.getEmail().matches("^[A-Za-z0-9._%+-]+@upskilled\\.com$")) {
-//                return ResponseEntity.badRequest().body("Invalid email format. Email must be in the format username@upskilled.com");
-//            }
+            /*
+//          Check if email matches the required format
+            if (!userDTO.getEmail().matches("^[A-Za-z0-9._%+-]+@upskilled\\.com$")) {
+                return ResponseEntity.badRequest().body("Invalid email format. Email must be in the format username@upskilled.com");
+            }
+            */
             Users user = new Users();
+
+            if(userDTO.getPassword().length() < 6) {
+                return ResponseEntity.badRequest().body("Password should be greater than 6");
+            }
+
+            if(userDTO.getEmail().isBlank() || userDTO.getFirstName().isBlank() || userDTO.getLastName().isBlank()) {
+                return ResponseEntity.badRequest().body("Email, First Name or Last Name missing!");
+            }
+
             user.setEmail(userDTO.getEmail());
             user.setPassword(userDTO.getPassword());
-            user.setRole(userDTO.getRole().toUpperCase());
             user.setFirstName(userDTO.getFirstName());
             user.setLastName(userDTO.getLastName());
             user.setDesignation(userDTO.getDesignation());
+
             if("INSTRUCTOR".equalsIgnoreCase(userDTO.getRole())) {
+                user.setRole(userDTO.getRole().toUpperCase());
                 user.setStatus(Users.Status.INACTIVE);
                 usersDetailsService.createUser(user);
             }
             else if("EMPLOYEE".equalsIgnoreCase(userDTO.getRole())){
+                user.setRole(userDTO.getRole().toUpperCase());
                 user.setStatus(Users.Status.ACTIVE);
                 usersDetailsService.createUser(user);
             }else {
@@ -111,14 +124,19 @@ public class AuthController {
             if(user == null) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User Not Found!");
             }
+
+            if(userDTO.getPassword().length() < 6) {
+                return ResponseEntity.badRequest().body("Password should be greater than 6");
+            }
+
             user.setPassword(userDTO.getPassword());
             user.setDesignation(userDTO.getDesignation());
+
             usersDetailsService.updateUser(user);
+
             return ResponseEntity.status(HttpStatus.CREATED).body("User updated successfully!");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Updation failed : " + e.getMessage());
         }
     }
-
-
 }
