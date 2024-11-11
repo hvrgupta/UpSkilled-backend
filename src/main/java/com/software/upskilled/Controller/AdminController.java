@@ -197,6 +197,19 @@ public class AdminController {
         return ResponseEntity.ok("Course updated successfully for instructor: " + instructor.getEmail());
     }
 
+    @PostMapping("/course/inactivate/{courseId}")
+    public ResponseEntity<String> inactivateCourse(@PathVariable Long courseId) {
+        Course course = courseService.findCourseById(courseId);
+
+        if (course == null) {
+            return ResponseEntity.badRequest().body("Course not found.");
+        }
+
+        course.setStatus(Course.Status.INACTIVE);
+        courseService.saveCourse(course);
+        return ResponseEntity.ok("Course Inactivated!");
+    }
+
     @GetMapping("/courses")
     public ResponseEntity<List<CourseInfoDTO>> viewCourses() {
 
