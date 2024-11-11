@@ -77,10 +77,17 @@ public class EmployeeController {
         return userDTO;
     }
     @GetMapping("/courses")
-    public ResponseEntity<List<CourseInfoDTO>> viewCourses() {
+    public ResponseEntity<List<CourseInfoDTO>> viewCourses(Authentication authentication) {
+
+        Users user = userService.findUserByEmail(authentication.getName());
+
+        Set<Long> enrolledCourseIds = user.getEnrollments().stream()
+                .map(enrollment -> enrollment.getCourse().getId())  // Get the course ID from enrollments
+                .collect(Collectors.toSet());
 
         List<CourseInfoDTO> courseList =  courseService.getAllCourses().stream()
                 .filter(course -> course.getStatus().equals(Course.Status.ACTIVE))
+                .filter(course -> !enrolledCourseIds.contains(course.getId()))
                 .map((course -> {
             CourseInfoDTO courseInfoDTO = new CourseInfoDTO();
             courseInfoDTO.setId(course.getId());
@@ -95,16 +102,33 @@ public class EmployeeController {
         return ResponseEntity.ok(courseList);
     }
 
+    @GetMapping("/enrolledCourses")
+    public ResponseEntity<List<CourseInfoDTO>> viewEnrolledCourses(Authentication authentication) {
+
+        String email = authentication.getName();
+        Users employee = userService.findUserByEmail(email);
+
+        List<CourseInfoDTO> courseList =  employee.getEnrollments().stream()
+                .map(Enrollment::getCourse)
+                .filter(course -> course.getStatus().equals(Course.Status.ACTIVE))
+                .map((course -> {
+                    CourseInfoDTO courseInfoDTO = new CourseInfoDTO();
+                    courseInfoDTO.setId(course.getId());
+                    courseInfoDTO.setTitle(course.getTitle());
+                    courseInfoDTO.setDescription(course.getDescription());
+                    courseInfoDTO.setInstructorId(course.getInstructor().getId());
+                    courseInfoDTO.setInstructorName(course.getInstructor().getFirstName() + " " + course.getInstructor().getLastName());
+                    courseInfoDTO.setName(course.getName());
+                    courseInfoDTO.setStatus(course.getStatus());
+                    return courseInfoDTO;
+                })).collect(Collectors.toList());
+        return ResponseEntity.ok(courseList);
+    }
+
     @GetMapping("/course/{courseId}")
-    public ResponseEntity<?> getCourseDetails(@PathVariable Long courseId, Authentication authentication) {
+    public ResponseEntity<?> getCourseDetails(@PathVariable Long courseId) {
 
         Course course = courseService.findCourseById(courseId);
-
-        ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(courseId,authentication);
-
-        if (authResponse != null) {
-            return authResponse;
-        }
 
         CourseInfoDTO courseInfoDTO = new CourseInfoDTO();
         courseInfoDTO.setId(course.getId());
@@ -117,6 +141,25 @@ public class EmployeeController {
 
         return ResponseEntity.ok(courseInfoDTO);
     }
+
+    @GetMapping("/enrollment/{courseId}")
+    public ResponseEntity<?> checkEnrollment(@PathVariable Long courseId, Authentication authentication) {
+        String email = authentication.getName();
+        Users employee = userService.findUserByEmail(email);
+
+        Course course = courseService.findCourseById(courseId);
+
+        if (course == null || course.getStatus().equals(Course.Status.INACTIVE)) {
+            return ResponseEntity.badRequest().body("Invalid course ID");
+        }
+
+        if (course.getEnrollments().stream().noneMatch(enrollment -> enrollment.getEmployee().equals(employee))) {
+            return ResponseEntity.ok("Unenrolled");
+        }
+
+        return ResponseEntity.ok("Enrolled");
+    }
+
     
     @PostMapping("/enroll")
     public ResponseEntity<String> enrollInCourse(
@@ -126,7 +169,7 @@ public class EmployeeController {
         Users employee = userService.findUserByEmail(email);
         Course course = courseService.findCourseById(courseId);
 
-        if (course == null) {
+        if (course == null || course.getStatus().equals(Course.Status.INACTIVE)) {
             return ResponseEntity.badRequest().body("Invalid course ID");
         }
 
@@ -366,6 +409,29 @@ public class EmployeeController {
         return ResponseEntity.ok(assignmentsList);
     }
 
+    /* Get assignment for the enrolled course by Id */
+    @GetMapping("/getAssignmentById/{assignmentId}")
+    public ResponseEntity<?> getAssignmentById(@PathVariable Long assignmentId, Authentication authentication) {
+
+        Assignment assignment = assignmentService.getAssignmentById(assignmentId);
+
+        if(assignment == null) return ResponseEntity.badRequest().body("Invalid Assignnment ID");
+
+        ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(assignment.getCourse().getId(), authentication);
+
+        if (authResponse != null) {
+            return authResponse;
+        }
+
+        AssignmentResponseDTO assignmentResponseDTO = new AssignmentResponseDTO();
+
+        assignmentResponseDTO.setId(assignment.getId());
+        assignmentResponseDTO.setDescription(assignment.getDescription());
+        assignmentResponseDTO.setDeadline(assignment.getDeadline());
+        assignmentResponseDTO.setTitle(assignment.getTitle());
+
+        return ResponseEntity.ok(assignmentResponseDTO);
+    }
 
     @GetMapping("/course/{courseId}/assignments/{assignmentId}")
     public ResponseEntity<?> getParticularAssignmentDetails( @PathVariable Long courseId, @PathVariable Long assignmentId, Authentication authentication )

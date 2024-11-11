@@ -169,6 +169,10 @@ public class InstructorController {
 
         Course course = courseService.findCourseById(courseId);
 
+        if(announcementDTO.getTitle().isBlank() || announcementDTO.getContent().isBlank()) {
+            return ResponseEntity.badRequest().body("Title or content missing!");
+        }
+
         Announcement announcement = Announcement.builder()
                         .title(announcementDTO.getTitle())
                         .content(announcementDTO.getContent())
@@ -227,6 +231,11 @@ public class InstructorController {
         if (authResponse != null) {
             return authResponse;
         }
+
+        if(announcementDTO.getTitle().isBlank() || announcementDTO.getContent().isBlank()) {
+            return ResponseEntity.badRequest().body("Title or content missing!");
+        }
+
 
         announcement.setTitle(announcementDTO.getTitle());
         announcement.setContent(announcementDTO.getContent());
@@ -325,6 +334,10 @@ public class InstructorController {
 
         Course course = courseService.findCourseById(courseId);
 
+        if((assignment.getTitle().isBlank() || assignment.getDescription().isBlank()) || assignment.getDeadline() == null) {
+            return ResponseEntity.badRequest().body("Title or content missing!");
+        }
+
         long currentEpoch = System.currentTimeMillis();
 
         if (currentEpoch > assignment.getDeadline()) {
@@ -390,7 +403,7 @@ public class InstructorController {
             return ResponseEntity.status(403).body("This assignment doesn't belongs to the course");
         }
 
-        if(updatedAssignment.getTitle().isEmpty() || updatedAssignment.getDescription().isEmpty() || updatedAssignment.getDeadline() == null) {
+        if(updatedAssignment.getTitle().isBlank() || updatedAssignment.getDescription().isBlank() || updatedAssignment.getDeadline() == null) {
             return ResponseEntity.badRequest().body("Title, description or deadline missing!");
         }
 
@@ -582,6 +595,7 @@ public class InstructorController {
 
     @GetMapping("/{courseID}/assignments/{assignmentId}/submissions/{submissionID}")
     public ResponseEntity<?> getSubmissionDetailsForParticularSubmission( @PathVariable Long assignmentId, @PathVariable Long courseID, @PathVariable Long submissionID, Authentication authentication ) throws IOException {
+
         ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseID, authentication);
 
         if (authResponse != null) {
