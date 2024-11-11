@@ -23,10 +23,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -499,7 +496,7 @@ public class EmployeeController {
                 submissionResponseDTO.setSubmission_status( assignmentSubmission.getStatus() );
                 submissionResponseDTO.setAssignmentID( particularAssignment.getId() );
                 //-1 indicates that the GradeBook doesn't exist
-                submissionResponseDTO.setGradeBookId( assignmentSubmission.getGrade().getId() );
+                submissionResponseDTO.setGradeBookId( -1 );
                 submissionResponseDTO.setGradeBook( null );
 
                 //Setting the grade in the assignment dto object
@@ -513,7 +510,7 @@ public class EmployeeController {
             assignmentResponseDTO.setTitle(particularAssignment.getTitle() );
             assignmentResponseDTO.setDescription(particularAssignment.getDescription() );
             assignmentResponseDTO.setDeadline(particularAssignment.getDeadline() );
-            assignmentResponseDTO.setSubmissionDetails( submissionResponseDTO );
+            assignmentResponseDTO.setSubmissionDetails(Collections.singletonList( submissionResponseDTO ));
 
             return ResponseEntity.ok( assignmentResponseDTO );
         }

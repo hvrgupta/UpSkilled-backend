@@ -17,4 +17,6 @@ public class SubmissionResponseDTO
     private long gradeBookId;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     GradeBookResponseDTO gradeBook;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    CreateUserDTO userDetails;
 }
