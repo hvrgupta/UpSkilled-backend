@@ -110,7 +110,7 @@ public class FileServiceImpl implements FileService {
         //Getting the instructorId; Since the CourseData is in the form of {course-title}_{course-id},using the split
         //to get the course-id
         String [] instructorDataArray = instructorData.split("_");
-        String instructorName = instructorDataArray[0]+"_"+instructorDataArray[1];
+        String instructorName = instructorDataArray[0]+"_"+instructorDataArray[1]+"_"+instructorDataArray[2];
         long instructorId = Long.parseLong( instructorDataArray[2] );
 
         try {
@@ -155,7 +155,7 @@ public class FileServiceImpl implements FileService {
         //Getting the instructorId; Since the CourseData is in the form of {course-title}_{course-id},using the split
         //to get the course-id
         String [] instructorDataArray = instructorData.split("_");
-        String instructorName = instructorDataArray[0]+"_"+instructorDataArray[1];
+        String instructorName = instructorDataArray[0]+"_"+instructorDataArray[1]+"_"+instructorDataArray[2];
 
 
         try {
@@ -195,7 +195,7 @@ public class FileServiceImpl implements FileService {
         //Getting the assignmentName from the assignmentData
         String assignmentName = assignmentData.getTitle();
         //Getting the employee userName from the employeeData
-        String employeeName = employeeData.getFirstName() + "_" + employeeData.getLastName();
+        String employeeName = employeeData.getFirstName() + "_" + employeeData.getLastName() + "_" + employeeData.getId();
 
 
         try {
@@ -240,7 +240,7 @@ public class FileServiceImpl implements FileService {
         String assignmentName = parentAssignment.getTitle();
         //Getting the employee name who uploaded the assignment
         String employeeName = alreadySubmittedSubmission.getEmployee().getFirstName()+"_"+
-                alreadySubmittedSubmission.getEmployee().getLastName();
+                alreadySubmittedSubmission.getEmployee().getLastName() + "_" + alreadySubmittedSubmission.getEmployee().getId();
 
         try {
             ObjectMetadata objectMetadata = new ObjectMetadata();

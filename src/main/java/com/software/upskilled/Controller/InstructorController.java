@@ -1,12 +1,18 @@
 package com.software.upskilled.Controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.JsonObject;
 import com.software.upskilled.Entity.*;
 import com.software.upskilled.dto.*;
 import com.software.upskilled.service.*;
+import com.software.upskilled.utils.AssignmentPropertyValidator;
+import com.software.upskilled.utils.CoursePropertyValidator;
+import com.software.upskilled.utils.ErrorResponseMessageUtil;
 import com.software.upskilled.utils.InstructorCourseAuth;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -14,10 +20,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -50,6 +56,15 @@ public class InstructorController {
 
     @Autowired
     private GradeBookService gradeBookService;
+
+    @Autowired
+    private final CoursePropertyValidator coursePropertyValidator;
+
+    @Autowired
+    private final AssignmentPropertyValidator assignmentPropertyValidator;
+
+    @Autowired
+    private final ErrorResponseMessageUtil errorResponseMessageUtil;
 
 
     @GetMapping("/hello")
@@ -424,6 +439,7 @@ public class InstructorController {
             return authResponse;
         }
 
+
         List<AssignmentResponseDTO> assignmentsList = assignmentService.getAssignmentsByCourse(courseId).stream()
                 .map(assignment -> {
                     AssignmentResponseDTO assignmentResponseDTO = new AssignmentResponseDTO();
@@ -444,6 +460,18 @@ public class InstructorController {
 
         if (authResponse != null) {
             return authResponse;
+        }
+
+        //Check if the assignment actually belongs to the course
+        Map<String,Long> propertyKeyValue = new HashMap<>();
+        propertyKeyValue.put("assignment", assignmentId);
+        //Pass the courseID and the associated property to the validator
+        //If not, then we send the error message that the assignment is not the property of the course
+        if( !coursePropertyValidator.isPropertyOfTheCourse( courseID, propertyKeyValue ) )
+        {
+            Map<String,String> errorMessage = new HashMap<>();
+            errorMessage.put("error","This assignment doesn't belong to this course");
+            return new ResponseEntity<>(errorMessage, HttpStatus.BAD_REQUEST);
         }
 
         //Get the Assignment details by passing the assignmentID
@@ -472,6 +500,15 @@ public class InstructorController {
                     submissionResponseDTO.setSubmission_at( assignmentSubmission.getSubmittedAt() );
                     submissionResponseDTO.setSubmission_status( assignmentSubmission.getStatus() );
                     submissionResponseDTO.setAssignmentID(assignmentDetails.getId());
+
+                    //Setting the user details for the submission Response
+                    CreateUserDTO userOfSubmission = new CreateUserDTO();
+                    userOfSubmission.setFirstName( assignmentSubmission.getEmployee().getFirstName() );
+                    userOfSubmission.setLastName( assignmentSubmission.getEmployee().getLastName() );
+                    userOfSubmission.setEmail( assignmentSubmission.getEmployee().getEmail() );
+                    userOfSubmission.setDesignation( assignmentSubmission.getEmployee().getDesignation() );
+                    submissionResponseDTO.setUserDetails( userOfSubmission );
+
                     //check if the submission response has a GradeBook
                     if( assignmentSubmission.getGrade() != null )
                     {
@@ -501,13 +538,21 @@ public class InstructorController {
                     //Adding DTO to the list
                     submissionResponseDTOList.add( submissionResponseDTO );
                 });
-                return ResponseEntity.ok(submissionResponseDTOList);
+
+                //Creating the Assignment DTO Object
+                AssignmentResponseDTO assignmentResponseDTO = new AssignmentResponseDTO();
+                assignmentResponseDTO.setTitle( assignmentDetails.getTitle() );
+                assignmentResponseDTO.setDescription( assignmentDetails.getDescription() );
+                assignmentResponseDTO.setDeadline( assignmentDetails.getDeadline() );
+                assignmentResponseDTO.setSubmissionDetails( submissionResponseDTOList );
+
+                return ResponseEntity.ok( assignmentResponseDTO );
             }
 
         }
     }
 
-    @GetMapping("/{courseID}/assignments/{assignmentId}/submissions/{submissionID}")
+    @GetMapping("/{courseID}/assignments/{assignmentId}/submissions/{submissionID}/viewSubmission")
     public ResponseEntity<?> viewParticularAssignmentSubmission(@PathVariable Long assignmentId, @PathVariable Long courseID, @PathVariable Long submissionID, Authentication authentication){
 
         ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseID, authentication);
@@ -522,48 +567,149 @@ public class InstructorController {
             return ResponseEntity.badRequest().body("Submission not found");
         else
         {
-            return new ResponseEntity<>( fileService.viewAssignmentSubmission( uploadedSubmissionDetails.getSubmissionUrl() ), HttpStatus.OK );
+            final byte[] data = fileService.viewAssignmentSubmission( uploadedSubmissionDetails.getSubmissionUrl() );
+            final ByteArrayResource resource = new ByteArrayResource(data);
+
+
+            return ResponseEntity
+                    .ok()
+                    .contentLength(data.length)
+                    .header("Content-disposition", "attachment; filename=\"" + uploadedSubmissionDetails.getSubmissionUrl() + "\"")
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(resource);
         }
     }
 
-    @GetMapping("/{courseID}/assignments/{assignmentId}/submissions/{submissionID}/GradeBook/getGradeBook")
-    public ResponseEntity<?> getParticularSubmissionGradeBook(@PathVariable Long assignmentId, @PathVariable Long courseID, @PathVariable Long submissionID, Authentication authentication){
-        //Obtaining the email of the user from the authentication object
-        String email = authentication.getName();
-        //Obtaining the instructor details
-        Users instructor = userService.findUserByEmail(email);
-
+    @GetMapping("/{courseID}/assignments/{assignmentId}/submissions/{submissionID}")
+    public ResponseEntity<?> getSubmissionDetailsForParticularSubmission( @PathVariable Long assignmentId, @PathVariable Long courseID, @PathVariable Long submissionID, Authentication authentication ) throws IOException {
         ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseID, authentication);
 
         if (authResponse != null) {
             return authResponse;
         }
-
-        //Get the submission details associated with the ID
-        Submission uploadedSubmissionDetails = submissionService.getSubmissionByID( submissionID );
-        if( uploadedSubmissionDetails == null )
-            return ResponseEntity.badRequest().body("Submission not found");
+        //Check if the assignment actually belongs to the course
+        Map<String,Long> propertyKeyValue = new HashMap<>();
+        propertyKeyValue.put("assignment", assignmentId);
+        //Pass the courseID and the associated property to the validator
+        //If not, then we send the error message that the assignment is not the property of the course
+        if( !coursePropertyValidator.isPropertyOfTheCourse( courseID, propertyKeyValue ) )
+        {
+            Map<String,String> errorMessage = new HashMap<>();
+            errorMessage.put("error","This assignment doesn't belong to this course");
+            return new ResponseEntity<>(errorMessage, HttpStatus.BAD_REQUEST);
+        }
+        //Get the assignment Details from the Database and check if the submission ID exist for the property
+        Assignment assignmentDetails = assignmentService.getAssignmentById( assignmentId );
+        if ( assignmentDetails == null )
+        {
+            HashMap<String,String> errorMessage = new HashMap<>();
+            errorMessage.put("error","Particular Assignment does not exist");
+            return new ResponseEntity<>(errorMessage, HttpStatus.BAD_REQUEST);
+        }
+        //Check if the submissionID is part of the assignment, If not then send appropriate error message
+        if ( !assignmentPropertyValidator.validateSubmissionAgainstAssignment( assignmentId, submissionID ) )
+        {
+            HashMap<String,String> errorMessage = new HashMap<>();
+            errorMessage.put("error","Particular Submission ID does not correspond to this assignment");
+            return new ResponseEntity<>(errorMessage, HttpStatus.BAD_REQUEST);
+        }
+        //Fetch the Submission Details for the Particular ID
+        Submission submission = submissionService.getSubmissionByID( submissionID );
+        //Check if the submission exists
+        if( submission == null )
+        {
+            HashMap<String,String> errorMessage = new HashMap<>();
+            errorMessage.put("error","Particular Submission does not exist for this assignment");
+            return ResponseEntity.status(400).body( errorMessage);
+        }
         else
         {
-            Gradebook gradeBookDetails = uploadedSubmissionDetails.getGrade();
-            if( gradeBookDetails == null )
-                return ResponseEntity.status(200).body("No Grades/Feedback available for this submission yet");
-            else
+
+            /**
+             * Create the MultiForm Response Part which will fetch the submission from the Cloud Storage
+             */
+            String multiFormBoundaryKey = "UpSkilledAPI11112024";
+            //Create the ResponseOutputStream
+            ByteArrayOutputStream multiPartResponseStream = new ByteArrayOutputStream();
+
+            //Downloading the Submission File from the Cloud Storage
+            final byte[] submissionFileData = fileService.viewAssignmentSubmission( submission.getSubmissionUrl() );
+
+            String submittedFileName = submission.getSubmissionUrl().split("/")[2];
+
+
+            //Creating the SubmissionResponse DTO Object
+            SubmissionResponseDTO submissionResponseDTO = new SubmissionResponseDTO();
+
+            submissionResponseDTO.setSubmission_id( submission.getId() );
+            submissionResponseDTO.setSubmission_url( submission.getSubmissionUrl() );
+            submissionResponseDTO.setSubmission_at( submission.getSubmittedAt() );
+            submissionResponseDTO.setSubmission_status( submission.getStatus() );
+            submissionResponseDTO.setAssignmentID( assignmentDetails.getId() );
+
+            //Fetch the User Details and set the details
+            CreateUserDTO userOfSubmission = new CreateUserDTO();
+            userOfSubmission.setFirstName( submission.getEmployee().getFirstName() );
+            userOfSubmission.setLastName( submission.getEmployee().getLastName() );
+            userOfSubmission.setDesignation( submission.getEmployee().getDesignation() );
+
+            //Set the employee details in the DTO object
+            submissionResponseDTO.setUserDetails( userOfSubmission );
+
+            /**
+             * Scenario if the Submission has been graded
+             */
+            if( submission.getStatus().equals( Submission.Status.GRADED ) )
             {
-                //Creating the GradeBook Response DTO
+                //Fetch the GradeBook Details for the submission
+                Gradebook gradeBookDetails = submission.getGrade();
+                //Create the GradeBook DTO Response object
                 GradeBookResponseDTO gradeBookResponseDTO = new GradeBookResponseDTO();
+                //Populate the DTO object with the details
                 gradeBookResponseDTO.setGrade( gradeBookDetails.getGrade() );
                 gradeBookResponseDTO.setFeedback( gradeBookDetails.getFeedback() );
+                gradeBookResponseDTO.setSubmissionID( submission.getId() );
                 gradeBookResponseDTO.setGradedDate( gradeBookDetails.getGradedAt() );
-                gradeBookResponseDTO.setInstructorID( instructor.getId() );
-                gradeBookResponseDTO.setSubmissionID( uploadedSubmissionDetails.getId() );
+                gradeBookResponseDTO.setInstructorID( assignmentDetails.getCreatedBy().getId() );
 
-                return ResponseEntity.ok( gradeBookResponseDTO );
-
+                //Set the details of the GradeBook in the DTO object
+                submissionResponseDTO.setGradeBook( gradeBookResponseDTO );
+                submissionResponseDTO.setGradeBookId( gradeBookDetails.getId() );
             }
+            else
+            {
+                //Since the Submission is not Graded, it means that there is no grade
+                submissionResponseDTO.setGradeBookId( -1 );
+                submissionResponseDTO.setGradeBook( null );
+            }
+
+            //Adding the SubmissionResponseDTO Part as JSON string
+            //Creating an object Mapper so that we can parse the data as string
+            ObjectMapper objectMapper = new ObjectMapper();
+
+            multiPartResponseStream.write(("--" + multiFormBoundaryKey + "\r\n").getBytes());
+            multiPartResponseStream.write("Content-Type: application/json\r\n\r\n".getBytes());
+            multiPartResponseStream.write( objectMapper.writeValueAsBytes( submissionResponseDTO ) );
+            multiPartResponseStream.write(("\r\n--" + multiFormBoundaryKey + "\r\n").getBytes());
+
+            //Adding the PDF part to the response
+            multiPartResponseStream.write("Content-Type: application/pdf\r\n".getBytes());
+            multiPartResponseStream.write(("Content-Disposition: attachment; filename=\"" + submittedFileName + "\"\r\n\r\n").getBytes());
+            multiPartResponseStream.write( submissionFileData );
+
+            // End of multipart
+            multiPartResponseStream.write(("\r\n--" + multiFormBoundaryKey + "--").getBytes());
+            //Setting the Headers
+            HttpHeaders responseHeaders = new HttpHeaders();
+            responseHeaders.setContentType(MediaType.parseMediaType("multipart/mixed; boundary=" + multiFormBoundaryKey));
+
+            return ResponseEntity.ok().headers( responseHeaders ).body( multiPartResponseStream.toByteArray() );
         }
 
+
+
     }
+
 
     @PostMapping("/GradeBook/GradeAssignment")
     public ResponseEntity<?> submitGradesToGradeBook(@RequestParam("submissionID") String submissionID, @RequestParam("courseID") String courseID, Authentication authentication, @RequestBody GradeBookRequestDTO gradingDetails)
@@ -717,29 +863,48 @@ public class InstructorController {
         }
     }
 
-    @GetMapping("/getCourseMaterial/{courseId}/{materialTitle}")
-    public ResponseEntity<?> getAllCourseMaterials(@PathVariable Long courseId, @PathVariable("materialTitle") String courseMaterialTitle, Authentication authentication)
+    @GetMapping("/getCourseMaterial/{courseId}/{courseMaterialId}")
+    public ResponseEntity<?> viewCourseMaterialById(@PathVariable Long courseId, @PathVariable("courseMaterialId") Long courseMaterialId , Authentication authentication)
     {
-        String email = authentication.getName();
-
         ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseId, authentication);
 
         if (authResponse != null) {
             return authResponse;
         }
 
-        //Fetch the corresponding course material details
-        CourseMaterial courseMaterial = courseMaterialService.getCourseMaterialByTitle( courseMaterialTitle.strip() );
+        //Check if the courseMaterialID belongs to this particular course
+        Map<String,Long> propertyKeyValue = new HashMap<>();
+        propertyKeyValue.put("courseMaterial", courseMaterialId);
+        //If the courseMaterialID doesn't belong to the course, then send appropriate error message
+        if( !coursePropertyValidator.isPropertyOfTheCourse( courseId, propertyKeyValue ) )
+            return errorResponseMessageUtil.createErrorResponseMessages( HttpStatus.BAD_REQUEST.value(), "This courseMaterial is not part of the course");
 
-        return new ResponseEntity<>(fileService.viewCourseMaterial( courseMaterial.getCourseMaterialUrl() ), HttpStatus.OK);
+        //Fetch the courseMaterial details
+        CourseMaterial courseMaterial = courseMaterialService.getCourseMaterialById( courseMaterialId );
+        //check if the CourseMaterial is null
+        if( courseMaterial == null )
+            return errorResponseMessageUtil.createErrorResponseMessages( HttpStatus.BAD_REQUEST.value(), "This courseMaterial doesn't exist" );
+
+        //Fetch the CourseMaterial
+        final byte[] data = fileService.viewCourseMaterial( courseMaterial.getCourseMaterialUrl() );
+        final ByteArrayResource resource = new ByteArrayResource(data);
+
+        //Get the Submission File Name
+        String courseMaterialName = courseMaterial.getCourseMaterialUrl().split("/")[2];
+        return ResponseEntity
+                .ok()
+                .contentLength(data.length)
+                .header("Content-disposition", "attachment; filename=\"" + courseMaterialName + "\"")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(resource);
 
     }
 
-    @PutMapping("/updateCourseMaterial/{courseId}/{currentMaterialTitle}")
-    public ResponseEntity<?> updateCourseMaterial(@RequestParam("file") MultipartFile file, @PathVariable Long courseId,
-                                                  @RequestParam("newMaterialTitle") String courseMaterialTitle,
-                                                  @RequestParam("newMaterialDescription") String courseMaterialDescription,
-                                                  @RequestParam("currentMaterialTitle") String existingCourseMaterialTitle,
+    @PutMapping("/updateCourseMaterial/{courseId}/{courseMaterialId}")
+    public ResponseEntity<?> updateCourseMaterial(@RequestParam(value = "file", required = true) MultipartFile file, @PathVariable Long courseId,
+                                                  @PathVariable Long courseMaterialId,
+                                                  @RequestParam("newMaterialTitle") Optional<String> courseMaterialTitle,
+                                                  @RequestParam("newMaterialDescription") Optional<String> courseMaterialDescription,
                                                   Authentication authentication)
     {
         String email = authentication.getName();
@@ -753,8 +918,12 @@ public class InstructorController {
             return authResponse;
         }
 
+
         //Fetch the corresponding course material details
-        CourseMaterial existingCourseMaterial = courseMaterialService.getCourseMaterialByTitle( existingCourseMaterialTitle.strip() );
+        CourseMaterial existingCourseMaterial = courseMaterialService.getCourseMaterialById( courseMaterialId );
+        //Check if the existing Course Material is null
+        if( existingCourseMaterial == null )
+            return errorResponseMessageUtil.createErrorResponseMessages( HttpStatus.BAD_REQUEST.value(), "The particular course material does not exist" );
 
         String instructorData = instructor.getFirstName()+"_"+instructor.getLastName()+"_"+instructor.getId();
         String courseData = course.getTitle()+"_"+course.getId();
@@ -766,11 +935,22 @@ public class InstructorController {
         //If the existing course material has been deleted then we proceed to upload the new material.
         if( isExistingCourseMaterialDeleted )
         {
-            CourseMaterialDTO newCourseMaterialDTO= CourseMaterialDTO.builder()
-                    .materialTitle( courseMaterialTitle )
-                    .materialDescription( courseMaterialDescription )
-                    .build();
-            return new ResponseEntity<>(fileService.updateCourseMaterial( file, instructorData, courseData, newCourseMaterialDTO, existingCourseMaterial ), HttpStatus.OK);
+            CourseMaterialDTO courseMaterialDTO = new CourseMaterialDTO();
+
+            //Handle the Course Material Title update operation
+            if( courseMaterialTitle.isPresent() )
+                courseMaterialDTO.setMaterialTitle( courseMaterialTitle.get() );
+            else
+                courseMaterialDTO.setMaterialTitle( existingCourseMaterial.getTitle() );
+
+            //Handle the course material description update operation
+            if( courseMaterialDescription.isPresent() )
+                courseMaterialDTO.setMaterialDescription( courseMaterialDescription.get() );
+            else
+                courseMaterialDTO.setMaterialDescription( existingCourseMaterial.getDescription() );
+
+
+            return new ResponseEntity<>(fileService.updateCourseMaterial( file, instructorData, courseData, courseMaterialDTO, existingCourseMaterial ), HttpStatus.OK);
 
         }
         else
