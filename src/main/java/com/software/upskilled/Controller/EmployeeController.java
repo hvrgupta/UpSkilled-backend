@@ -341,7 +341,6 @@ public class EmployeeController {
         Submission alreadySubmittedResponse = submissionRepository.getSubmissionById( Long.parseLong(submissionID) );
         //Check if the submitted Response already has a grade linked with it
         Gradebook gradebookDetails = alreadySubmittedResponse.getGrade();
-        System.out.println( gradebookDetails.getGrade() );
         //If the assignment already has a grade, then we need to remove the grade assigned with the submission as well
         if( gradebookDetails != null ){
             gradeBookService.deleteGradeBookSubmission( gradebookDetails.getId() );
