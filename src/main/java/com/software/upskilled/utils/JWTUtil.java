@@ -22,13 +22,17 @@ public class JWTUtil {
         this.secret = secret;
     }
 
-    public String generateToken(String email, String firstName, String lastName, String role, Users.Status status) {
+    public String generateToken(Users user) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("firstName", firstName);
-        claims.put("lastName", lastName);
-        claims.put("role", role);
-        claims.put("status", status);
-        return createToken(claims, email);
+        claims.put("firstName", user.getFirstName());
+        claims.put("lastName", user.getLastName());
+        claims.put("role", user.getRole());
+        claims.put("status", user.getStatus());
+        // Include designation only if it’s not null
+        if (user.getDesignation() != null) {
+            claims.put("designation", user.getDesignation());
+        }
+        return createToken(claims, user.getEmail());
     }
 
     private String createToken(Map<String, Object> claims, String email) {

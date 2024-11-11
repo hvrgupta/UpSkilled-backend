@@ -100,7 +100,7 @@ public class AuthController {
 
             if(authentication.isAuthenticated()) {
                 Users user = usersDetailsService.findUserByEmail(authRequest.getEmail());
-                return jwtUtil.generateToken(user.getEmail(),user.getFirstName(),user.getLastName(),user.getRole(),user.getStatus());
+                return jwtUtil.generateToken(user);
             }
 
         } catch (Exception e) {
