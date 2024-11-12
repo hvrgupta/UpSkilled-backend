@@ -12,6 +12,7 @@ import com.software.upskilled.Entity.Users;
 import com.software.upskilled.dto.*;
 import com.software.upskilled.repository.SubmissionRepository;
 import com.software.upskilled.service.*;
+import com.software.upskilled.utils.CoursePropertyValidator;
 import com.software.upskilled.utils.CreateDTOObjectsImpl;
 import com.software.upskilled.utils.EmployeeCourseAuth;
 import com.software.upskilled.utils.ErrorResponseMessageUtil;
@@ -66,6 +67,8 @@ public class EmployeeController {
     private CreateDTOObjectsImpl dtoObjectsCreator;
     @Autowired
     private ErrorResponseMessageUtil errorResponseMessageUtil;
+    @Autowired
+    private CoursePropertyValidator coursePropertyValidator;
 
     @GetMapping("/hello")
     public String hello(){
@@ -481,6 +484,58 @@ public class EmployeeController {
 
             return ResponseEntity.ok( assignmentResponseDTO );
         }
+    }
+
+    @GetMapping( "/course/{courseId}/assignment/{assignmentId}/viewSubmission" )
+    public ResponseEntity<?> getAssignmentSubmissionForEmployee( @PathVariable Long courseId, @PathVariable Long assignmentId, Authentication authentication )
+    {
+        ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(courseId, authentication);
+        if (authResponse != null) {
+            return authResponse;
+        }
+        //Get the employee details
+        Users employeeDetails = userService.findUserByEmail( authentication.getName() );
+        //Get the courseDetails
+        Course courseDetails = courseService.findCourseById( courseId );
+        //Check if the courseDetails is null
+        if( courseDetails == null )
+            return errorResponseMessageUtil.createErrorResponseMessages(HttpStatus.BAD_REQUEST.value(), "The courseID is invalid");
+        //Check if the assignmentID belongs to the courseID
+        Map<String,Long> propertyMap = new HashMap<>();
+        propertyMap.put( "assignment",assignmentId );
+        //If the assignmentId is not the property of the courseID, then send appropriate error message
+        if( !coursePropertyValidator.isPropertyOfTheCourse( courseId, propertyMap ) )
+            return errorResponseMessageUtil.createErrorResponseMessages( HttpStatus.BAD_REQUEST.value(), "The assignmentID doesn't belong to this course Details");
+
+        //Get the assignmentDetails
+        Assignment assignmentDetails = assignmentService.getAssignmentById( assignmentId );
+
+        //Check if submission is present for the assignment for the current user
+        List<Submission> userSubmission = assignmentDetails.getSubmissions().stream().filter( submission -> submission.getEmployee().getId() == employeeDetails.getId() ).toList();
+        //If userSubmission is not there
+        if( userSubmission.isEmpty() )
+            return errorResponseMessageUtil.createErrorResponseMessages( HttpStatus.NO_CONTENT.value(), "No submission exists for this assignment by the employee");
+        else
+        {
+            //Get the Submission object
+            Submission submissionDetails = userSubmission.get( 0 );
+            //Get the submission url
+            String submissionURL = submissionDetails.getSubmissionUrl();
+            //Get the file name
+            String submissionFileName = submissionURL.split("/")[2];
+
+            final byte[] data = fileService.viewAssignmentSubmission( submissionURL );
+            final ByteArrayResource resource = new ByteArrayResource(data);
+
+            return ResponseEntity
+                    .ok()
+                    .contentLength(data.length)
+                    .header("Content-disposition", "attachment; filename=\"" + submissionFileName + "\"")
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(resource);
+
+        }
+
     }
 
 
