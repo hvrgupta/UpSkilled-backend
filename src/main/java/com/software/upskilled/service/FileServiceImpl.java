@@ -278,7 +278,6 @@ public class FileServiceImpl implements FileService {
             DeleteObjectRequest deleteCourseMaterialRequest = new DeleteObjectRequest( courseMaterialsBucketName, courseMaterialURL );
 
             s3Client.deleteObject(deleteCourseMaterialRequest);
-            System.out.println("Course Material deleted successfully from Cloud Storage.");
 
             //Creating the File Deletion Response object
             FileDeletionResponse fileDeletionResponse = new FileDeletionResponse();
@@ -299,7 +298,6 @@ public class FileServiceImpl implements FileService {
             DeleteObjectRequest deleteCourseMaterialRequest = new DeleteObjectRequest( assignmentBucketName, submissionURL );
 
             s3Client.deleteObject(deleteCourseMaterialRequest);
-            System.out.println("Uploaded assignment successfully deleted successfully from Cloud Storage.");
 
             //Creating the File Deletion Response object
             FileDeletionResponse fileDeletionResponse = new FileDeletionResponse();

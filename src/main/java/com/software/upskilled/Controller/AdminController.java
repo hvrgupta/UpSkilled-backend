@@ -212,10 +212,25 @@ public class AdminController {
         return ResponseEntity.ok("Course Details updated successfully");
     }
 
+    @PostMapping("/course/inactivate/{courseId}")
+    public ResponseEntity<String> inactivateCourse(@PathVariable Long courseId) {
+        Course course = courseService.findCourseById(courseId);
+
+        if (course == null) {
+            return ResponseEntity.badRequest().body("Course not found.");
+        }
+
+        course.setStatus(Course.Status.INACTIVE);
+        courseService.saveCourse(course);
+        return ResponseEntity.ok("Course Inactivated!");
+    }
+
     @GetMapping("/courses")
     public ResponseEntity<List<CourseInfoDTO>> viewCourses() {
 
-        List<CourseInfoDTO> courseList =  courseService.getAllCourses().stream().map((course -> {
+        List<CourseInfoDTO> courseList =  courseService.getAllCourses().stream()
+                .filter(course -> course.getStatus().equals(Course.Status.ACTIVE))
+                .map((course -> {
             CourseInfoDTO courseInfoDTO = new CourseInfoDTO();
             courseInfoDTO.setId(course.getId());
             courseInfoDTO.setTitle(course.getTitle());

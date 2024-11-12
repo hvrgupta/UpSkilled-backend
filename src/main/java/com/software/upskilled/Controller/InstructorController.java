@@ -836,7 +836,6 @@ public class InstructorController {
 
         //Try deleting the existing file first before removing the file
         boolean isExistingCourseMaterialDeleted = fileService.deleteCourseMaterial( existingCourseMaterial.getCourseMaterialUrl() ).isDeletionSuccessfull();
-        System.out.println( "Deletion Status of existing course material " + isExistingCourseMaterialDeleted );
 
         //If the existing course material has been deleted then we proceed to upload the new material.
         if( isExistingCourseMaterialDeleted )
