@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -228,6 +229,7 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
+    @Transactional
     public FileUploadResponse updateAssignmentSubmission(MultipartFile multipartFile, Submission alreadySubmittedSubmission) {
         FileUploadResponse fileUploadResponse = new FileUploadResponse();
         String filePath = "";
@@ -251,6 +253,8 @@ public class FileServiceImpl implements FileService {
             fileUploadResponse.setFilePath(filePath);
             fileUploadResponse.setDateTime(LocalDateTime.now());
 
+
+
             /**
              * Since, we are updating the submission, we just need to upload the submission
              * url and then save the file.
@@ -258,7 +262,7 @@ public class FileServiceImpl implements FileService {
             alreadySubmittedSubmission.setSubmissionUrl( filePath );
 
             //Saving the new submission details to the database
-            submissionService.saveSubmissionDetails( alreadySubmittedSubmission );
+            submissionService.modifySubmissionDetails( alreadySubmittedSubmission );
 
         } catch (IOException e) {
             log.error("Error occurred ==> {}", e.getMessage());

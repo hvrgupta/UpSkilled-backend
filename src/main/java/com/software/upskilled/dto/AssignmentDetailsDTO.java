@@ -1,12 +1,12 @@
 package com.software.upskilled.dto;
 
-import jakarta.annotation.Nullable;
 import lombok.Data;
 
 @Data
-public class AssignmentRequestDTO
+public class AssignmentDetailsDTO
 {
     String title;
     String description;
     long deadline;
+    long id;
 }
