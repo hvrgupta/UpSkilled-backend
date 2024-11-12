@@ -213,7 +213,9 @@ public class AdminController {
     @GetMapping("/courses")
     public ResponseEntity<List<CourseInfoDTO>> viewCourses() {
 
-        List<CourseInfoDTO> courseList =  courseService.getAllCourses().stream().map((course -> {
+        List<CourseInfoDTO> courseList =  courseService.getAllCourses().stream()
+                .filter(course -> course.getStatus().equals(Course.Status.ACTIVE))
+                .map((course -> {
             CourseInfoDTO courseInfoDTO = new CourseInfoDTO();
             courseInfoDTO.setId(course.getId());
             courseInfoDTO.setTitle(course.getTitle());
