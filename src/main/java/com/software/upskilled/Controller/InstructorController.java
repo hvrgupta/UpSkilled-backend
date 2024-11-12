@@ -614,7 +614,7 @@ public class InstructorController {
     }
 
 
-    @PostMapping("/GradeBook/GradeAssignment")
+    @PostMapping("/gradeBook/gradeAssignment")
     public ResponseEntity<?> submitGradesToGradeBook(@RequestParam("submissionId") String submissionID, @RequestParam("courseId") String courseID, Authentication authentication, @RequestBody GradeBookRequestDTO gradingDetails)
     {
         //Obtaining the email of the user from the authentication object
@@ -669,7 +669,7 @@ public class InstructorController {
         }
     }
 
-    @PutMapping("/GradeBook/updateGradeAssignment")
+    @PutMapping("/gradeBook/updateGradeAssignment")
     public ResponseEntity<?> updateGradeDetails( @RequestBody GradeBookRequestDTO gradeBookRequestDTO,
                                                  @RequestParam("newGrade") Optional<Integer> newGrade,
                                                  @RequestParam("gradingId") long gradingID,
