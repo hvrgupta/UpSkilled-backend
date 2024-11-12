@@ -44,7 +44,7 @@ public class Course {
     @Column(nullable = false)
     private Status status;
 
-    @ManyToOne
+    @ManyToOne( cascade = CascadeType.ALL )
     @JoinColumn(name = "instructor_id")
     private Users instructor;
 

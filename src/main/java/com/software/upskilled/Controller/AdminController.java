@@ -8,12 +8,13 @@ import com.software.upskilled.dto.CreateUserDTO;
 import com.software.upskilled.service.FileService;
 import com.software.upskilled.service.UserService;
 import com.software.upskilled.service.CourseService;
+import com.software.upskilled.utils.AdminRoleAuth;
+import com.software.upskilled.utils.ErrorResponseMessageUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,6 +35,12 @@ public class AdminController {
 
     @Autowired
     private FileService fileService;
+
+    @Autowired
+    private AdminRoleAuth adminRoleAuth;
+
+    @Autowired
+    private ErrorResponseMessageUtil errorResponseMessageUtil;
 
     @GetMapping("/hello")
     public String hello(){
@@ -165,36 +172,44 @@ public class AdminController {
         return ResponseEntity.ok("Course created successfully for instructor: " + instructor.getEmail());
     }
 
-    @PostMapping("/modifyCourse/{courseId}")
-    public ResponseEntity<String> modifyCourseDetails(@RequestBody CourseDTO courseDTO, @PathVariable Long courseId, @AuthenticationPrincipal Users user) {
+    @PutMapping("/updateCourseDetails/{courseId}")
+    public ResponseEntity<?> modifyCourseDetails(@RequestBody CourseDTO courseDTO, @PathVariable Long courseId, @AuthenticationPrincipal Users user) {
 
         Course course = courseService.findCourseById(courseId);
         if (course == null) {
-            return ResponseEntity.badRequest().body("Course not found.");
+            return errorResponseMessageUtil.createErrorResponseMessages( HttpStatus.BAD_REQUEST.value(), "Course doesn't exist with the particular courseID");
         }
 
-        Users instructor = userService.findUserById(courseDTO.getInstructorId());
-
-        if(!user.getId().equals(instructor.getId())) {
-            return ResponseEntity.status(403).body("You are not the instructor of this course");
+        //Check if the user is actually ADMIN, if not then send error message
+        if( !adminRoleAuth.checkUserForAdminRole( user ) )
+        {
+            return errorResponseMessageUtil.createErrorResponseMessages(HttpStatus.FORBIDDEN.value(), "The user account doesn't have the admin privileges for this operation");
         }
 
-        if (!instructor.getRole().equals("INSTRUCTOR") || !instructor.getStatus().toString().equalsIgnoreCase("ACTIVE")) {
-            return ResponseEntity.badRequest().body("Invalid instructor ID");
+        //Check for the values from the courseDTO
+        if( !courseDTO.getTitle().isBlank() )
+            //Get the newTitle from the DTO object and set it to the existing course
+            course.setTitle( courseDTO.getTitle() );
+        if( !courseDTO.getDescription().isBlank() )
+            //Get the new Description from the DTO Object and set it to the existing course
+            course.setDescription( courseDTO.getDescription() );
+        if( !courseDTO.getName().isBlank() )
+            //Get the new Name from the DTO Object and set it to existing Name
+            course.setName( courseDTO.getName() );
+        if( courseDTO.getInstructorId() != 0 ) {
+            //Fetch the details of the new Instructor User
+            Users instructor = userService.findUserById(courseDTO.getInstructorId());
+            //If instructor ID is not null, then perform the change operation
+            if (instructor != null) {
+                //Save the instructor object to the exiting course details
+                course.setInstructor(instructor);
+            }
         }
 
-        if(courseService.findByTitle(courseDTO.getTitle()) != null) {
-            return ResponseEntity.badRequest().body("Course title already exists.");
-        }
-
-        if(courseDTO.getTitle().isBlank() || courseDTO.getDescription().isBlank() || courseDTO.getName().isBlank()) {
-            return ResponseEntity.badRequest().body("Title, description or name missing!");
-        }
-
-
+        //Perform the update operation
         courseService.saveCourse(course);
 
-        return ResponseEntity.ok("Course updated successfully for instructor: " + instructor.getEmail());
+        return ResponseEntity.ok("Course Details updated successfully");
     }
 
     @GetMapping("/courses")

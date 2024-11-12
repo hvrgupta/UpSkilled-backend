@@ -190,7 +190,8 @@ public class InstructorController {
         Announcement announcement = announcementService.findAnnouncementById(id);
 
         if (announcement == null) {
-            return ResponseEntity.badRequest().body("Announcement not found");
+            //Create Appropriate Error Message
+            return errorResponseMessageUtil.createErrorResponseMessages( HttpStatus.NOT_FOUND.value(), "The announcement corresponding to this announcement ID does not exist");
         }
 
         Course course = announcement.getCourse();
@@ -213,7 +214,7 @@ public class InstructorController {
 
     // Edit an existing announcement
     @PutMapping("/announcement/{announcementId}")
-    public ResponseEntity<String> editAnnouncement(
+    public ResponseEntity<?> editAnnouncement(
             @PathVariable Long announcementId,
             @RequestBody AnnouncementDTO announcementDTO,
             Authentication authentication) {
@@ -221,7 +222,8 @@ public class InstructorController {
         Announcement announcement = announcementService.findAnnouncementById(announcementId);
 
         if (announcement == null) {
-            return ResponseEntity.badRequest().body("Announcement not found");
+            //Create Appropriate Error Message
+            return errorResponseMessageUtil.createErrorResponseMessages( HttpStatus.NOT_FOUND.value(), "The announcement corresponding to this announcement ID does not exist");
         }
 
         Course course = announcement.getCourse();
@@ -558,6 +560,7 @@ public class InstructorController {
                 assignmentResponseDTO.setDescription( assignmentDetails.getDescription() );
                 assignmentResponseDTO.setDeadline( assignmentDetails.getDeadline() );
                 assignmentResponseDTO.setSubmissionDetails( submissionResponseDTOList );
+                assignmentResponseDTO.setId( assignmentDetails.getId() );
 
                 return ResponseEntity.ok( assignmentResponseDTO );
             }
