@@ -79,6 +79,7 @@ public class CreateDTOObjectsImpl implements CreateDTOObjects
 
         //Setting the details of the object
         gradeBookResponseDTO.setGrade( gradebook.getGrade() );
+        gradeBookResponseDTO.setGradeBookId( gradeBookResponseDTO.getGradeBookId() );
         gradeBookResponseDTO.setFeedback(gradebook.getFeedback() );
         gradeBookResponseDTO.setSubmissionID( submissionId );
         gradeBookResponseDTO.setInstructorID( instructorID );

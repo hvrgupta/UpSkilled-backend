@@ -8,6 +8,7 @@ import java.util.Date;
 public class GradeBookResponseDTO
 {
     private int grade;
+    private long gradeBookId;
     private String feedback;
     private Date gradedDate;
     private long instructorID;
