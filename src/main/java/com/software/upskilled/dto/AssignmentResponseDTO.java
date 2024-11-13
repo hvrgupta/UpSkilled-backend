@@ -9,11 +9,7 @@ import java.util.List;
 @Data
 public class AssignmentResponseDTO
 {
-    long id;
-    String title;
-    String description;
-    long deadline;
-    int grade;
+    AssignmentDetailsDTO assignmentDetails;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     List<SubmissionResponseDTO> submissionDetails;
 

@@ -12,7 +12,10 @@ import com.software.upskilled.Entity.Users;
 import com.software.upskilled.dto.*;
 import com.software.upskilled.repository.SubmissionRepository;
 import com.software.upskilled.service.*;
+import com.software.upskilled.utils.CoursePropertyValidator;
+import com.software.upskilled.utils.CreateDTOObjectsImpl;
 import com.software.upskilled.utils.EmployeeCourseAuth;
+import com.software.upskilled.utils.ErrorResponseMessageUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpStatus;
@@ -53,10 +56,19 @@ public class EmployeeController {
     
     @Autowired
     private EmployeeCourseAuth employeeCourseAuth;
+
     @Autowired
     private SubmissionRepository submissionRepository;
+
     @Autowired
     private GradeBookService gradeBookService;
+
+    @Autowired
+    private CreateDTOObjectsImpl dtoObjectsCreator;
+    @Autowired
+    private ErrorResponseMessageUtil errorResponseMessageUtil;
+    @Autowired
+    private CoursePropertyValidator coursePropertyValidator;
 
     @GetMapping("/hello")
     public String hello(){
@@ -273,8 +285,9 @@ public class EmployeeController {
         {
             List<CourseMaterialDTO> courseMaterialDTOList = new ArrayList<>();
             courseMaterials.forEach(courseMaterial->{
-                courseMaterialDTOList.add( CourseMaterialDTO.builder().
-                        materialTitle( courseMaterial.getTitle() )
+                courseMaterialDTOList.add( CourseMaterialDTO.builder()
+                                .id(courseMaterial.getId())
+                        .materialTitle( courseMaterial.getTitle() )
                         .materialDescription(courseMaterial.getDescription() ).build());
 
             });
@@ -301,8 +314,8 @@ public class EmployeeController {
 
     @PostMapping("/uploadAssignment")
     public ResponseEntity<?> uploadAssignment(@RequestParam("file") MultipartFile file,
-                                              Authentication authentication, @RequestParam("assignmentID") String assignmentID,
-                                              @RequestParam("courseID")String courseID)
+                                              Authentication authentication, @RequestParam("assignmentId") String assignmentID,
+                                              @RequestParam("courseId")String courseID)
     {
         ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(Long.parseLong( courseID ),authentication);
 
@@ -325,10 +338,10 @@ public class EmployeeController {
 
     //Method to update the Assignment uploaded. The system always keeps the latest copy of the assignment
     //and removes the previously uploaded file.
-    @PutMapping("/updateUploadedAssignment/{submissionID}")
-    public ResponseEntity<?> updateUploadedAssignment( @PathVariable("submissionID") String submissionID,
+    @PutMapping("/updateUploadedAssignment/{submissionId}")
+    public ResponseEntity<?> updateUploadedAssignment( @PathVariable("submissionId") String submissionID,
                                                        @RequestParam("file") MultipartFile file,
-                                                       @RequestParam("courseID") String courseID,
+                                                       @RequestParam("courseId") String courseID,
                                                        Authentication authentication)
     {
         //Invoking the auth util method to verify the employee
@@ -341,9 +354,16 @@ public class EmployeeController {
         Submission alreadySubmittedResponse = submissionRepository.getSubmissionById( Long.parseLong(submissionID) );
         //Check if the submitted Response already has a grade linked with it
         Gradebook gradebookDetails = alreadySubmittedResponse.getGrade();
+        //System.out.println( gradebookDetails.getGrade() );
         //If the assignment already has a grade, then we need to remove the grade assigned with the submission as well
-        if( gradebookDetails != null ){
+        /*if( gradebookDetails != null ){
             gradeBookService.deleteGradeBookSubmission( gradebookDetails.getId() );
+            //Change the status of the submitted response to SUBMITTED
+            alreadySubmittedResponse.setStatus( Submission.Status.SUBMITTED );
+        }*/
+        if( gradebookDetails != null )
+        {
+            return errorResponseMessageUtil.createErrorResponseMessages( HttpStatus.BAD_REQUEST.value(), "Employee can not upload assignment past due date");
         }
 
         //First delete the already submitted assignment so that the new assignment can be uploaded
@@ -372,68 +392,47 @@ public class EmployeeController {
 
         //Get the employee details
         Users employeeDetails = userService.findUserByEmail( authentication.getName() );
-        List<AssignmentResponseDTO> assignmentsList = assignmentService.getAssignmentsByCourse(courseId).stream()
-                .map(assignment ->
+        List<AssignmentResponseDTO> assignmentsList = assignmentService.getAssignmentsByCourse(courseId)
+                .stream().map(assignment ->
                 {
                     //Get the submission of the assignment pertaining to the User
                     List<Submission> assignmentSubmissionOfUser = assignment.getSubmissions().stream().filter( assignmentSubmission ->{
                         return Objects.equals(assignmentSubmission.getEmployee().getId(), employeeDetails.getId());
                     }).toList();
 
-
                     AssignmentResponseDTO assignmentResponseDTO = new AssignmentResponseDTO();
-                    assignmentResponseDTO.setTitle(assignment.getTitle());
-                    assignmentResponseDTO.setId(assignment.getId());
-                    assignmentResponseDTO.setDeadline(assignment.getDeadline());
-                    assignmentResponseDTO.setDescription(assignment.getDescription());
+
+                    //Create the assignmentDetails DTO Object for the Assignment Response DTO
+                    AssignmentDetailsDTO assignmentDetailsDTO = new AssignmentDetailsDTO();
+                    //Setting the details from the assignment object
+                    assignmentDetailsDTO.setTitle(assignment.getTitle() );
+                    assignmentDetailsDTO.setDescription(assignment.getDescription());
+                    assignmentDetailsDTO.setDeadline(  assignment.getDeadline() );
+                    assignmentDetailsDTO.setId( assignment.getId() );
+                    assignmentResponseDTO.setAssignmentDetails( assignmentDetailsDTO );
 
                     //Check if there are any submissions posted by the user for this assignment
-                    //If no submissions, then pass -1 to the frontend
+                    //If no submissions, then don't set the Submission Details for the user
                     if( assignmentSubmissionOfUser.isEmpty() )
-                        assignmentResponseDTO.setGrade(-1);
-
+                        assignmentResponseDTO.setSubmissionDetails( null );
                     else
                     {
                         Submission assignmentSubmission = assignmentSubmissionOfUser.get(0);
-                        //Check if the submission has not been graded. If the assignment has not been
-                        //graded, then send 101 to the frontend.
-                        if ( !assignmentSubmission.getStatus().equals( Submission.Status.GRADED ) )
-                            assignmentResponseDTO.setGrade(101);
-                        else
-                            assignmentResponseDTO.setGrade( assignmentSubmission.getGrade().getGrade() );
+                        //Get the Submission Response DTO Object
+                        SubmissionResponseDTO submissionResponseDTO = dtoObjectsCreator.createSubmissionDTO( assignmentSubmission, assignment, employeeDetails );
+                        //Set the submissionResponse DTO in the assignment Response DTO
+                        assignmentResponseDTO.setSubmissionDetails( Collections.singletonList( submissionResponseDTO ) );
                     }
+                    //Set the assignmentDetailsDTO in the assignmentResponse DTO
+
                     return assignmentResponseDTO;
                 }).toList();
 
         return ResponseEntity.ok(assignmentsList);
     }
 
-    /* Get assignment for the enrolled course by Id */
-    @GetMapping("/getAssignmentById/{assignmentId}")
-    public ResponseEntity<?> getAssignmentById(@PathVariable Long assignmentId, Authentication authentication) {
-
-        Assignment assignment = assignmentService.getAssignmentById(assignmentId);
-
-        if(assignment == null) return ResponseEntity.badRequest().body("Invalid Assignnment ID");
-
-        ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(assignment.getCourse().getId(), authentication);
-
-        if (authResponse != null) {
-            return authResponse;
-        }
-
-        AssignmentResponseDTO assignmentResponseDTO = new AssignmentResponseDTO();
-
-        assignmentResponseDTO.setId(assignment.getId());
-        assignmentResponseDTO.setDescription(assignment.getDescription());
-        assignmentResponseDTO.setDeadline(assignment.getDeadline());
-        assignmentResponseDTO.setTitle(assignment.getTitle());
-
-        return ResponseEntity.ok(assignmentResponseDTO);
-    }
-
     @GetMapping("/course/{courseId}/assignments/{assignmentId}")
-    public ResponseEntity<?> getParticularAssignmentDetails( @PathVariable Long courseId, @PathVariable Long assignmentId, Authentication authentication )
+    public ResponseEntity<?> getAssignmentByID( @PathVariable Long courseId, @PathVariable Long assignmentId, Authentication authentication )
     {
         ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(courseId, authentication);
         if (authResponse != null) {
@@ -450,85 +449,93 @@ public class EmployeeController {
             return Objects.equals(assignmentSubmission.getEmployee().getId(), employeeDetails.getId());
         }).toList();
 
-        AssignmentResponseDTO assignmentResponseDTO = new AssignmentResponseDTO();
         //If submission exist, then get the submission details
         if( !assignmentSubmissionOfUser.isEmpty() )
         {
             Submission assignmentSubmission = assignmentSubmissionOfUser.get(0);
-            SubmissionResponseDTO submissionResponseDTO = new SubmissionResponseDTO();
-            //Fetch GradeBook Details if the assignment has been graded.
-            if( assignmentSubmission.getStatus().equals( Submission.Status.GRADED ) )
-            {
-                //Get GradeBook for the submission
-                Gradebook submissionGradeBook = assignmentSubmission.getGrade();
-                //Create the SubmissionResponse GradeBook DTO object
-                //Setting the values of the DTO Object
-                submissionResponseDTO.setSubmission_id( assignmentSubmission.getId() );
-                submissionResponseDTO.setSubmission_url( assignmentSubmission.getSubmissionUrl() );
-                submissionResponseDTO.setSubmission_at( assignmentSubmission.getSubmittedAt() );
-                submissionResponseDTO.setSubmission_status( assignmentSubmission.getStatus() );
-                submissionResponseDTO.setAssignmentID( particularAssignment.getId() );
-                submissionResponseDTO.setGradeBookId( submissionGradeBook.getId() );
+            //Get the Submission Response DTO Object from the DTO Objects creator
+            SubmissionResponseDTO submissionResponseDTO = dtoObjectsCreator.createSubmissionDTO( assignmentSubmission, particularAssignment, employeeDetails );
 
-                //Setting the grade in the assignment dto object
-                assignmentResponseDTO.setGrade( submissionGradeBook.getGrade() );
+            //Create the DTO for the Assignment Details Object
+            AssignmentDetailsDTO assignmentDetailsDTO = new AssignmentDetailsDTO();
+            //Setting the details for the assignment details object
+            assignmentDetailsDTO.setId( particularAssignment.getId() );
+            assignmentDetailsDTO.setTitle(particularAssignment.getTitle());
+            assignmentDetailsDTO.setDescription(particularAssignment.getDescription());
+            assignmentDetailsDTO.setDeadline(  particularAssignment.getDeadline() );
 
-                //Create the GradeBook DTO Object
-
-                GradeBookResponseDTO gradeBookResponseDTO = new GradeBookResponseDTO();
-
-                gradeBookResponseDTO.setGrade( submissionGradeBook.getGrade() );
-                gradeBookResponseDTO.setSubmissionID( assignmentSubmission.getId() );
-                gradeBookResponseDTO.setFeedback( submissionGradeBook.getFeedback() );
-                gradeBookResponseDTO.setInstructorID( submissionGradeBook.getInstructor().getId() );
-                gradeBookResponseDTO.setGradedDate( submissionGradeBook.getGradedAt() );
-
-                //Add the GradeBook DTO object to the submission response DTO Object
-                submissionResponseDTO.setGradeBook( gradeBookResponseDTO );
-            }
-            else
-            {
-                //Setting the values of the DTO Object
-                submissionResponseDTO.setSubmission_id( assignmentSubmission.getId() );
-                submissionResponseDTO.setSubmission_url( assignmentSubmission.getSubmissionUrl() );
-                submissionResponseDTO.setSubmission_at( assignmentSubmission.getSubmittedAt() );
-                submissionResponseDTO.setSubmission_status( assignmentSubmission.getStatus() );
-                submissionResponseDTO.setAssignmentID( particularAssignment.getId() );
-                //-1 indicates that the GradeBook doesn't exist
-                submissionResponseDTO.setGradeBookId( -1 );
-                submissionResponseDTO.setGradeBook( null );
-
-                //Setting the grade in the assignment dto object
-                //Check if the submission has not been graded. If the assignment has not been
-                //graded, then send 101 to the frontend.
-                assignmentResponseDTO.setGrade( 101 );
-            }
-
-            //Setting the values of the assignmentDTO object
-            assignmentResponseDTO.setId(particularAssignment.getId() );
-            assignmentResponseDTO.setTitle(particularAssignment.getTitle() );
-            assignmentResponseDTO.setDescription(particularAssignment.getDescription() );
-            assignmentResponseDTO.setDeadline(particularAssignment.getDeadline() );
-            assignmentResponseDTO.setSubmissionDetails(Collections.singletonList( submissionResponseDTO ));
+            //Create the Assignment Response DTO object
+            AssignmentResponseDTO assignmentResponseDTO = dtoObjectsCreator.createAssignmentResponseDTO( assignmentDetailsDTO,
+                    Collections.singletonList( submissionResponseDTO ));
 
             return ResponseEntity.ok( assignmentResponseDTO );
         }
         else {
-            //Check if there are any submissions posted by the user for this assignment
-            //If no submissions, then pass -1 to the frontend
-            //Setting the values of the assignmentDTO object
-            assignmentResponseDTO.setId(particularAssignment.getId() );
-            assignmentResponseDTO.setTitle(particularAssignment.getTitle() );
-            assignmentResponseDTO.setDescription(particularAssignment.getDescription() );
-            assignmentResponseDTO.setDeadline(particularAssignment.getDeadline() );
-            //Setting the grade in the assignment dto object
-            assignmentResponseDTO.setGrade( -1 );
+
+            //Create the DTO for the Assignment Details Object
+            AssignmentDetailsDTO assignmentDetailsDTO = new AssignmentDetailsDTO();
+            //Setting the details for the assignment details object
+            assignmentDetailsDTO.setId( particularAssignment.getId() );
+            assignmentDetailsDTO.setTitle(particularAssignment.getTitle());
+            assignmentDetailsDTO.setDescription(particularAssignment.getDescription());
+            assignmentDetailsDTO.setDeadline(  particularAssignment.getDeadline() );
+
+            //Create the Assignment Response DTO object
+            AssignmentResponseDTO assignmentResponseDTO = dtoObjectsCreator.createAssignmentResponseDTO( assignmentDetailsDTO, null);
+
             return ResponseEntity.ok( assignmentResponseDTO );
         }
+    }
 
-        //Check if the
+    @GetMapping( "/course/{courseId}/assignment/{assignmentId}/viewSubmission" )
+    public ResponseEntity<?> getAssignmentSubmissionForEmployee( @PathVariable Long courseId, @PathVariable Long assignmentId, Authentication authentication )
+    {
+        ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(courseId, authentication);
+        if (authResponse != null) {
+            return authResponse;
+        }
+        //Get the employee details
+        Users employeeDetails = userService.findUserByEmail( authentication.getName() );
+        //Get the courseDetails
+        Course courseDetails = courseService.findCourseById( courseId );
+        //Check if the courseDetails is null
+        if( courseDetails == null )
+            return errorResponseMessageUtil.createErrorResponseMessages(HttpStatus.BAD_REQUEST.value(), "The courseID is invalid");
+        //Check if the assignmentID belongs to the courseID
+        Map<String,Long> propertyMap = new HashMap<>();
+        propertyMap.put( "assignment",assignmentId );
+        //If the assignmentId is not the property of the courseID, then send appropriate error message
+        if( !coursePropertyValidator.isPropertyOfTheCourse( courseId, propertyMap ) )
+            return errorResponseMessageUtil.createErrorResponseMessages( HttpStatus.BAD_REQUEST.value(), "The assignmentID doesn't belong to this course Details");
 
+        //Get the assignmentDetails
+        Assignment assignmentDetails = assignmentService.getAssignmentById( assignmentId );
 
+        //Check if submission is present for the assignment for the current user
+        List<Submission> userSubmission = assignmentDetails.getSubmissions().stream().filter( submission -> submission.getEmployee().getId() == employeeDetails.getId() ).toList();
+        //If userSubmission is not there
+        if( userSubmission.isEmpty() )
+            return errorResponseMessageUtil.createErrorResponseMessages( HttpStatus.NO_CONTENT.value(), "No submission exists for this assignment by the employee");
+        else
+        {
+            //Get the Submission object
+            Submission submissionDetails = userSubmission.get( 0 );
+            //Get the submission url
+            String submissionURL = submissionDetails.getSubmissionUrl();
+            //Get the file name
+            String submissionFileName = submissionURL.split("/")[2];
+
+            final byte[] data = fileService.viewAssignmentSubmission( submissionURL );
+            final ByteArrayResource resource = new ByteArrayResource(data);
+
+            return ResponseEntity
+                    .ok()
+                    .contentLength(data.length)
+                    .header("Content-disposition", "attachment; filename=\"" + submissionFileName + "\"")
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(resource);
+
+        }
 
     }
 
