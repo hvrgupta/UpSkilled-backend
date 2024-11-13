@@ -5,6 +5,6 @@ import lombok.Data;
 @Data
 public class GradeBookRequestDTO
 {
-    private int grade;
+    private Integer grade;
     private String feedback;
 }

@@ -671,7 +671,6 @@ public class InstructorController {
 
     @PutMapping("/gradeBook/updateGradeAssignment")
     public ResponseEntity<?> updateGradeDetails( @RequestBody GradeBookRequestDTO gradeBookRequestDTO,
-                                                 @RequestParam("newGrade") Optional<Integer> newGrade,
                                                  @RequestParam("gradingId") long gradingID,
                                                  Authentication authentication)
     {
@@ -689,9 +688,9 @@ public class InstructorController {
             return authResponse;
         }
 
-        //Check if new grade is passed or not
-        //Update the value of the existing grade
-        newGrade.ifPresent(gradeBookDetails::setGrade);
+        //If grade ius present then, set to new grade ,else don't
+        if( gradeBookRequestDTO.getGrade() != null )
+            gradeBookDetails.setGrade(gradeBookDetails.getGrade() );
         //Check if the feedback is present in the DTO object and it is not blank, then only update
         if( (gradeBookRequestDTO.getFeedback() != null) && (!gradeBookRequestDTO.getFeedback().isBlank()))
             gradeBookDetails.setFeedback(gradeBookRequestDTO.getFeedback() );
