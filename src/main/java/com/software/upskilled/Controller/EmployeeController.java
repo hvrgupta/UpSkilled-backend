@@ -100,6 +100,7 @@ public class EmployeeController {
         List<CourseInfoDTO> courseList =  courseService.getAllCourses().stream()
                 .filter(course -> course.getStatus().equals(Course.Status.ACTIVE))
                 .filter(course -> !enrolledCourseIds.contains(course.getId()))
+                .sorted(Comparator.comparing(Course::getUpdatedAt).reversed())
                 .map((course -> {
             CourseInfoDTO courseInfoDTO = new CourseInfoDTO();
             courseInfoDTO.setId(course.getId());
@@ -123,6 +124,7 @@ public class EmployeeController {
         List<CourseInfoDTO> courseList =  employee.getEnrollments().stream()
                 .map(Enrollment::getCourse)
                 .filter(course -> course.getStatus().equals(Course.Status.ACTIVE))
+                .sorted(Comparator.comparing(Course::getUpdatedAt).reversed())
                 .map((course -> {
                     CourseInfoDTO courseInfoDTO = new CourseInfoDTO();
                     courseInfoDTO.setId(course.getId());
@@ -202,6 +204,7 @@ public class EmployeeController {
         Set<Announcement> announcements = announcementService.getAnnouncementsByCourseId(courseId);
 
         List<AnnouncementRequestDTO> announcementDTOs = announcements.stream()
+                .sorted(Comparator.comparing(Announcement::getUpdatedAt).reversed())
                 .map(announcement -> new AnnouncementRequestDTO(announcement.getId(),announcement.getTitle(), announcement.getContent(), announcement.getUpdatedAt()))
                 .collect(Collectors.toList());
 
