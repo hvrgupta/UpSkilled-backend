@@ -14,6 +14,9 @@ public class SucessResponseMessageUtil
         successResponseDTO.setHttpCode( httpCode );
         successResponseDTO.setSuccessMessage( successMessage );
 
-        return ResponseEntity.status( httpCode ).body( successResponseDTO );
+        if( httpCode == 200 )
+            return ResponseEntity.ok( successResponseDTO );
+        else
+            return ResponseEntity.status( httpCode ).body( successResponseDTO );
     }
 }
