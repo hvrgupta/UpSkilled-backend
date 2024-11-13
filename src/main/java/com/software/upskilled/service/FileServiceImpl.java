@@ -176,7 +176,7 @@ public class FileServiceImpl implements FileService {
             existingCourseMaterial.setCourseMaterialUrl( filePath );
 
             //Saving the courseMaterial detail to the database
-            courseMaterialService.saveCourseMaterial(existingCourseMaterial);
+            courseMaterialService.updateCourseMaterial(existingCourseMaterial);
 
         } catch (IOException e) {
             log.error("Error occurred ==> {}", e.getMessage());

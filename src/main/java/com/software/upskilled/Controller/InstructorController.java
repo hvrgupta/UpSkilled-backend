@@ -64,6 +64,9 @@ public class InstructorController {
     private final ErrorResponseMessageUtil errorResponseMessageUtil;
 
     @Autowired
+    private final SucessResponseMessageUtil sucessResponseMessageUtil;
+
+    @Autowired
     private final CreateDTOObjectsImpl dtoObjectsCreator;
 
 
@@ -853,18 +856,28 @@ public class InstructorController {
             else
                 courseMaterialDTO.setMaterialDescription( existingCourseMaterial.getDescription() );
 
-
-            return new ResponseEntity<>(fileService.updateCourseMaterial( file, instructorData, courseData, courseMaterialDTO, existingCourseMaterial ), HttpStatus.OK);
+            //Try to update the courseMaterial
+            fileService.updateCourseMaterial( file, instructorData, courseData, courseMaterialDTO, existingCourseMaterial );
+            //Check if the courseMaterial has been updated
+            CourseMaterial updatedCourseMaterial = courseMaterialService.getCourseMaterialByTitle( courseMaterialDTO.getMaterialTitle() );
+            if( (updatedCourseMaterial.getCourseMaterialUrl().equals( existingCourseMaterial.getCourseMaterialUrl())) ||
+                    (updatedCourseMaterial.getTitle().equals( existingCourseMaterial.getTitle() ))
+            || (updatedCourseMaterial.getDescription().equals( existingCourseMaterial.getDescription() ) ))
+            {
+                return sucessResponseMessageUtil.createSuccessResponseMessages(HttpStatus.OK.value(), "The course material details have been successfully updated");
+            }
+            else
+                return errorResponseMessageUtil.createErrorResponseMessages( HttpStatus.INTERNAL_SERVER_ERROR.value(), "The course material details have not updated, Please contact admin ");
 
         }
         else
         {
-            return ResponseEntity.status(200).body("Failed to delete the existing course material, Please try again later" );
+            return errorResponseMessageUtil.createErrorResponseMessages(HttpStatus.INTERNAL_SERVER_ERROR.value(),"Failed to delete the existing course material, Please try again later or contact Admin" );
         }
     }
 
-    @DeleteMapping("/deleteCourseMaterial/{courseId}/{materialTitle}")
-    public ResponseEntity<?> deleteCourseMaterial(@PathVariable Long courseId, @PathVariable("materialTitle") String courseMaterialTitle, Authentication authentication)
+    @DeleteMapping("/deleteCourseMaterial/{courseId}/{courseMaterialId}")
+    public ResponseEntity<?> deleteCourseMaterial(@PathVariable Long courseId, @PathVariable("courseMaterialId") Long courseMaterialId, Authentication authentication)
     {
         String email = authentication.getName();
 
@@ -874,19 +887,42 @@ public class InstructorController {
             return authResponse;
         }
 
+        //Check if the course exist
+        Course courseDetails = courseService.findCourseById(courseId);
+        //If the course is null, send error message to the user
+        if( courseDetails == null )
+            return errorResponseMessageUtil.createErrorResponseMessages(HttpStatus.BAD_REQUEST.value(), "No course exist corresponding to the particular courseId");
+
+        //Since the course exist, check if the courseMaterialId is a valid property of the course
+        Map<String, Long> propertyMap = new HashMap<>();
+        propertyMap.put("courseMaterial",courseMaterialId);
+        //Check if the property is a valid property, if not then send appropriate error message
+        if( !coursePropertyValidator.isPropertyOfTheCourse( courseId, propertyMap ) )
+            return errorResponseMessageUtil.createErrorResponseMessages( HttpStatus.BAD_REQUEST.value(), "No course Material with the following ID correspond to this course");
+
         //Fetch the corresponding course material details
-        CourseMaterial courseMaterial = courseMaterialService.getCourseMaterialByTitle( courseMaterialTitle.strip() );
+        CourseMaterial courseMaterial = courseMaterialService.getCourseMaterialById( courseMaterialId );
+        //Get the course Material URL
+        String courseMaterialURL = courseMaterial.getCourseMaterialUrl();
 
         //Try deleting the existing file first before removing the file
-        boolean isExistingCourseMaterialDeleted = fileService.deleteCourseMaterial( courseMaterial.getCourseMaterialUrl() ).isDeletionSuccessfull();
+        boolean isExistingCourseMaterialDeleted = fileService.deleteCourseMaterial( courseMaterialURL ).isDeletionSuccessfull();
 
         if(  isExistingCourseMaterialDeleted )
         {
-            return ResponseEntity.status(200).body("Course Material successfully removed from cloud storage");
+            //Delete the courseMaterial entry from the database
+            courseMaterialService.deleteCourseMaterial( courseMaterialId );
+            //Validate if the courseMaterial is deleted or not
+            CourseMaterial deletedCourseMaterial = courseMaterialService.getCourseMaterialById( courseMaterialId );
+            if( deletedCourseMaterial != null )
+                return sucessResponseMessageUtil.createSuccessResponseMessages( HttpStatus.OK.value(), "Course Material has been successfully deleted" );
+            else
+                return sucessResponseMessageUtil.createSuccessResponseMessages( HttpStatus.OK.value(), "Failure in removing courseMaterial from database, Please contact admin" );
         }
         else
         {
-            return ResponseEntity.status(200).body("Failed to delete the existing course material, Please try again later" );
+            return errorResponseMessageUtil.createErrorResponseMessages( HttpStatus.INTERNAL_SERVER_ERROR.value(), "Failure in removing the course material from storage, Please contact admin");
+
         }
     }
 

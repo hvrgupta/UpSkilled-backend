@@ -1,10 +1,11 @@
 package com.software.upskilled.service;
 
 import com.software.upskilled.Entity.CourseMaterial;
-import com.software.upskilled.dto.FileDeletionResponse;
 import com.software.upskilled.repository.CourseMaterialRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -17,6 +18,20 @@ public class CourseMaterialService
     public CourseMaterial saveCourseMaterial(CourseMaterial courseMaterial)
     {
         return courseMaterialRepository.save(courseMaterial);
+    }
+
+    @Transactional
+    @Modifying( flushAutomatically = true )
+    public CourseMaterial updateCourseMaterial( CourseMaterial courseMaterial )
+    {
+        return courseMaterialRepository.save(courseMaterial);
+    }
+
+    @Transactional
+    @Modifying( flushAutomatically = true )
+    public void deleteCourseMaterial(Long courseMaterialId )
+    {
+        courseMaterialRepository.deleteCourseMaterialByCourseId( courseMaterialId );
     }
 
     public CourseMaterial getCourseMaterialByTitle( String courseMaterialTitle ){
