@@ -285,8 +285,9 @@ public class EmployeeController {
         {
             List<CourseMaterialDTO> courseMaterialDTOList = new ArrayList<>();
             courseMaterials.forEach(courseMaterial->{
-                courseMaterialDTOList.add( CourseMaterialDTO.builder().
-                        materialTitle( courseMaterial.getTitle() )
+                courseMaterialDTOList.add( CourseMaterialDTO.builder()
+                                .id(courseMaterial.getId())
+                        .materialTitle( courseMaterial.getTitle() )
                         .materialDescription(courseMaterial.getDescription() ).build());
 
             });

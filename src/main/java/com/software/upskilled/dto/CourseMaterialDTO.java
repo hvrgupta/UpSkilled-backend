@@ -10,6 +10,7 @@ import lombok.*;
 @Builder
 public class CourseMaterialDTO
 {
+    private Long id;
     private String materialTitle;
     private String materialDescription;
 }

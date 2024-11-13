@@ -761,8 +761,9 @@ public class InstructorController {
         else
         {
             List<CourseMaterialDTO> courseMaterialDTOList = new ArrayList<>();
-            courseMaterials.forEach(courseMaterial-> courseMaterialDTOList.add( CourseMaterialDTO.builder().
-                    materialTitle( courseMaterial.getTitle() )
+            courseMaterials.forEach(courseMaterial-> courseMaterialDTOList.add( CourseMaterialDTO.builder()
+                            .id(courseMaterial.getId())
+                    .materialTitle( courseMaterial.getTitle() )
                     .materialDescription(courseMaterial.getDescription() ).build()));
             return ResponseEntity.ok(courseMaterialDTOList);
         }
