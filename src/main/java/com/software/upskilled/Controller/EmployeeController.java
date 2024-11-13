@@ -542,5 +542,48 @@ public class EmployeeController {
 
     }
 
+    @GetMapping("/getGrades/{courseId}")
+    public ResponseEntity<?> getGradesAndAssignments(@PathVariable Long courseId, Authentication authentication) {
+        Users employeeDetails = userService.findUserByEmail( authentication.getName());
+
+        ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(courseId, authentication);
+
+        if (authResponse != null) {
+            return authResponse;
+        }
+
+        List<Assignment> assignments = assignmentService.getAssignmentsByCourse(courseId);
+        List<EmployeeAssignmentGradeDTO> assignmentGradeDTOs = new ArrayList<>();
+
+
+        for(Assignment assignment: assignments) {
+            Optional<Submission> userSubmission = assignment.getSubmissions().stream().filter(submission -> submission.getEmployee().getId().equals(employeeDetails.getId())).findFirst();
+
+            if (userSubmission.isPresent()) {
+                Submission submission = userSubmission.get();
+                EmployeeAssignmentGradeDTO dto = new EmployeeAssignmentGradeDTO();
+                dto.setAssignmentId(assignment.getId());
+                dto.setAssignmentName(assignment.getTitle());
+                dto.setSubmissionId(submission.getId());
+                dto.setStatus(submission.getStatus());
+
+                if(submission.getStatus().equals(Submission.Status.GRADED))
+                    dto.setGrade(submission.getGrade().getGrade());
+
+                assignmentGradeDTOs.add(dto);
+            }else {
+                EmployeeAssignmentGradeDTO dto = new EmployeeAssignmentGradeDTO();
+                dto.setAssignmentId(assignment.getId());
+                dto.setAssignmentName(assignment.getTitle());
+                dto.setStatus(Submission.Status.PENDING);
+                assignmentGradeDTOs.add(dto);
+            }
+
+
+        }
+        return ResponseEntity.ok(assignmentGradeDTOs);
+
+    }
+
 
 }
