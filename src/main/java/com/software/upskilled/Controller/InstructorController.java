@@ -762,11 +762,13 @@ public class InstructorController {
             return ResponseEntity.status(404).body("No Course Materials have been uploaded yet for this course");
         else
         {
-            List<CourseMaterialDTO> courseMaterialDTOList = new ArrayList<>();
-            courseMaterials.forEach(courseMaterial-> courseMaterialDTOList.add( CourseMaterialDTO.builder()
-                            .id(courseMaterial.getId())
-                    .materialTitle( courseMaterial.getTitle() )
-                    .materialDescription(courseMaterial.getDescription() ).build()));
+            List<CourseMaterialDTO> courseMaterialDTOList = courseMaterials.stream()
+                            .sorted(Comparator.comparing(CourseMaterial::getUpdatedAt))
+                                    .map(courseMaterial-> CourseMaterialDTO.builder()
+                                                    .id(courseMaterial.getId())
+                                                    .materialTitle( courseMaterial.getTitle() )
+                                                    .materialDescription(courseMaterial.getDescription() ).build()).collect(Collectors.toList());
+
             return ResponseEntity.ok(courseMaterialDTOList);
         }
     }
