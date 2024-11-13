@@ -690,7 +690,7 @@ public class InstructorController {
 
         //If grade ius present then, set to new grade ,else don't
         if( gradeBookRequestDTO.getGrade() != null )
-            gradeBookDetails.setGrade(gradeBookDetails.getGrade() );
+            gradeBookDetails.setGrade(gradeBookRequestDTO.getGrade() );
         //Check if the feedback is present in the DTO object and it is not blank, then only update
         if( (gradeBookRequestDTO.getFeedback() != null) && (!gradeBookRequestDTO.getFeedback().isBlank()))
             gradeBookDetails.setFeedback(gradeBookRequestDTO.getFeedback() );
