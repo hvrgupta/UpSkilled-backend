@@ -15,4 +15,6 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long>
 
     @Query("from Submission where assignment.id = :assignmentId order by submittedAt desc")
     List<Submission> getSubmissionsSortedBySubmissionTime(@Param("assignmentId") Long assignmentId);
+
+    List<Submission> findByEmployee_IdAndAssignment_Course_Id(Long employeeId, Long courseId);
 }
