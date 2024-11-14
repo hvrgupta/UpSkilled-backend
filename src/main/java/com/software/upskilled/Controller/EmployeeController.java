@@ -200,8 +200,8 @@ public class EmployeeController {
             return authResponse;
         }
 
-        // Fetch and return the announcements
-        Set<Announcement> announcements = announcementService.getAnnouncementsByCourseId(courseId);
+        // Fetch and return the announcements sorted by the updated first
+        Set<Announcement> announcements = announcementService.getAnnouncementsByCourseId( courseId );
 
         List<AnnouncementRequestDTO> announcementDTOs = announcements.stream()
                 .sorted(Comparator.comparing(Announcement::getUpdatedAt).reversed())
@@ -395,7 +395,7 @@ public class EmployeeController {
 
         //Get the employee details
         Users employeeDetails = userService.findUserByEmail( authentication.getName() );
-        List<AssignmentResponseDTO> assignmentsList = assignmentService.getAssignmentsByCourse(courseId)
+        List<AssignmentResponseDTO> assignmentsList = assignmentService.getAllAssignmentsSortedByDeadLine(courseId)
                 .stream().map(assignment ->
                 {
                     //Get the submission of the assignment pertaining to the User

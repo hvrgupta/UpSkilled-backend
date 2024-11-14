@@ -7,12 +7,12 @@ import org.springframework.stereotype.Service;
 @Service
 public class ErrorResponseMessageUtil
 {
-    public ResponseEntity<ErrorResponseDTO> createErrorResponseMessages( int errorCode, String errorMessage )
+    public ResponseEntity<ErrorResponseDTO> createErrorResponseMessages( int httpCode, String errorMessage )
     {
         ErrorResponseDTO errorResponseDTO = new ErrorResponseDTO();
-        errorResponseDTO.setErrorCode(errorCode);
-        errorResponseDTO.setErrorMessage(errorMessage);
+        errorResponseDTO.setHttpCode(httpCode);
+        errorResponseDTO.setMessage(errorMessage);
 
-        return ResponseEntity.status( errorCode ).body( errorResponseDTO );
+        return ResponseEntity.status( httpCode ).body( errorResponseDTO );
     }
 }
