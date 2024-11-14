@@ -775,7 +775,7 @@ public class InstructorController {
         Set<CourseMaterial> courseMaterials = course.getCourseMaterials();
 
         if( courseMaterials.isEmpty() )
-            return sucessResponseMessageUtil.createSuccessResponseMessages(HttpStatus.OK.value(), "Course Materials does not exists");
+            return ResponseEntity.ok( new ArrayList<>() );
         else
         {
             List<CourseMaterialDTO> courseMaterialDTOList = courseMaterials.stream()
