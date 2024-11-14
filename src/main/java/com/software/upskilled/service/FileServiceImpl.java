@@ -273,6 +273,7 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
+    @Async
     public FileDeletionResponse deleteCourseMaterial(String courseMaterialURL) {
         try {
             DeleteObjectRequest deleteCourseMaterialRequest = new DeleteObjectRequest( courseMaterialsBucketName, courseMaterialURL );
@@ -293,6 +294,7 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
+    @Async
     public FileDeletionResponse deleteUploadedAssignment(String submissionURL) {
         try {
             DeleteObjectRequest deleteCourseMaterialRequest = new DeleteObjectRequest( assignmentBucketName, submissionURL );
