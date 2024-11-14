@@ -512,8 +512,21 @@ public class InstructorController {
         {
             //Obtain the set of the submissions and send the details
             List<Submission> assignmentSubmissions = submissionService.getSubmissionsSortedBySubmittedTime( assignmentDetails.getId() );
-            if( assignmentSubmissions.isEmpty() )
-                return sucessResponseMessageUtil.createSuccessResponseMessages( HttpStatus.OK.value(), "No submissions yet for this assignment");
+            if( assignmentSubmissions.isEmpty() ) {
+
+                AssignmentDetailsDTO assignmentDetailsDTO = new AssignmentDetailsDTO();
+
+                //Setting the details for the assignment details object
+                assignmentDetailsDTO.setId(assignmentDetails.getId());
+                assignmentDetailsDTO.setTitle(assignmentDetails.getTitle());
+                assignmentDetailsDTO.setDescription(assignmentDetails.getDescription());
+                assignmentDetailsDTO.setDeadline(assignmentDetails.getDeadline());
+
+                //Create the AssignmentResponse DTO by sending the details
+                AssignmentResponseDTO assignmentResponseDTO = dtoObjectsCreator.createAssignmentResponseDTO(assignmentDetailsDTO, null);
+
+                return ResponseEntity.ok(assignmentResponseDTO);
+            }
             else
             {
                 List<SubmissionResponseDTO> submissionResponseDTOList = new ArrayList<>();
@@ -762,7 +775,7 @@ public class InstructorController {
         Set<CourseMaterial> courseMaterials = course.getCourseMaterials();
 
         if( courseMaterials.isEmpty() )
-            return ResponseEntity.status(404).body("No Course Materials have been uploaded yet for this course");
+            return sucessResponseMessageUtil.createSuccessResponseMessages(HttpStatus.OK.value(), "Course Materials does not exists");
         else
         {
             List<CourseMaterialDTO> courseMaterialDTOList = courseMaterials.stream()
