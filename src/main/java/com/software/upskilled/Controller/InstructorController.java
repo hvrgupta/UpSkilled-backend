@@ -98,6 +98,7 @@ public class InstructorController {
         List<CourseInfoDTO> courseList =  courseService.findByInstructorId(instructor.getId())
                 .stream()
                 .filter(course -> course.getStatus().equals(Course.Status.ACTIVE))
+                .sorted(Comparator.comparing(Course::getUpdatedAt).reversed())
                 .map((course -> {
             CourseInfoDTO courseInfoDTO = new CourseInfoDTO();
             courseInfoDTO.setId(course.getId());
@@ -151,6 +152,7 @@ public class InstructorController {
 
         // Convert announcements to AnnouncementDTO
         List<AnnouncementRequestDTO> announcementDTOs = announcements.stream()
+                .sorted(Comparator.comparing(Announcement::getUpdatedAt).reversed())
                 .map(announcement -> new AnnouncementRequestDTO(announcement.getId(),announcement.getTitle(), announcement.getContent(),announcement.getUpdatedAt()))
                 .collect(Collectors.toList());
 
@@ -763,10 +765,13 @@ public class InstructorController {
             return ResponseEntity.status(404).body("No Course Materials have been uploaded yet for this course");
         else
         {
-            List<CourseMaterialDTO> courseMaterialDTOList = new ArrayList<>();
-            courseMaterials.forEach(courseMaterial-> courseMaterialDTOList.add( CourseMaterialDTO.builder().
-                    materialTitle( courseMaterial.getTitle() )
-                    .materialDescription(courseMaterial.getDescription() ).build()));
+            List<CourseMaterialDTO> courseMaterialDTOList = courseMaterials.stream()
+                            .sorted(Comparator.comparing(CourseMaterial::getUpdatedAt))
+                                    .map(courseMaterial-> CourseMaterialDTO.builder()
+                                                    .id(courseMaterial.getId())
+                                                    .materialTitle( courseMaterial.getTitle() )
+                                                    .materialDescription(courseMaterial.getDescription() ).build()).collect(Collectors.toList());
+
             return ResponseEntity.ok(courseMaterialDTOList);
         }
     }

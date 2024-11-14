@@ -100,6 +100,7 @@ public class EmployeeController {
         List<CourseInfoDTO> courseList =  courseService.getAllCourses().stream()
                 .filter(course -> course.getStatus().equals(Course.Status.ACTIVE))
                 .filter(course -> !enrolledCourseIds.contains(course.getId()))
+                .sorted(Comparator.comparing(Course::getUpdatedAt).reversed())
                 .map((course -> {
             CourseInfoDTO courseInfoDTO = new CourseInfoDTO();
             courseInfoDTO.setId(course.getId());
@@ -123,6 +124,7 @@ public class EmployeeController {
         List<CourseInfoDTO> courseList =  employee.getEnrollments().stream()
                 .map(Enrollment::getCourse)
                 .filter(course -> course.getStatus().equals(Course.Status.ACTIVE))
+                .sorted(Comparator.comparing(Course::getUpdatedAt).reversed())
                 .map((course -> {
                     CourseInfoDTO courseInfoDTO = new CourseInfoDTO();
                     courseInfoDTO.setId(course.getId());
@@ -202,7 +204,9 @@ public class EmployeeController {
         Set<Announcement> announcements = announcementService.getAnnouncementsByCourseId( courseId );
 
         List<AnnouncementRequestDTO> announcementDTOs = announcements.stream()
-                .map(announcement -> new AnnouncementRequestDTO(announcement.getId(),announcement.getTitle(), announcement.getContent(), announcement.getUpdatedAt())).toList();
+                .sorted(Comparator.comparing(Announcement::getUpdatedAt).reversed())
+                .map(announcement -> new AnnouncementRequestDTO(announcement.getId(),announcement.getTitle(), announcement.getContent(), announcement.getUpdatedAt()))
+                .collect(Collectors.toList());
 
         return ResponseEntity.ok(announcementDTOs);
     }
@@ -284,8 +288,9 @@ public class EmployeeController {
         {
             List<CourseMaterialDTO> courseMaterialDTOList = new ArrayList<>();
             courseMaterials.forEach(courseMaterial->{
-                courseMaterialDTOList.add( CourseMaterialDTO.builder().
-                        materialTitle( courseMaterial.getTitle() )
+                courseMaterialDTOList.add( CourseMaterialDTO.builder()
+                                .id(courseMaterial.getId())
+                        .materialTitle( courseMaterial.getTitle() )
                         .materialDescription(courseMaterial.getDescription() ).build());
 
             });
@@ -534,6 +539,49 @@ public class EmployeeController {
                     .body(resource);
 
         }
+
+    }
+
+    @GetMapping("/getGrades/{courseId}")
+    public ResponseEntity<?> getGradesAndAssignments(@PathVariable Long courseId, Authentication authentication) {
+        Users employeeDetails = userService.findUserByEmail( authentication.getName());
+
+        ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(courseId, authentication);
+
+        if (authResponse != null) {
+            return authResponse;
+        }
+
+        List<Assignment> assignments = assignmentService.getAssignmentsByCourse(courseId);
+        List<EmployeeAssignmentGradeDTO> assignmentGradeDTOs = new ArrayList<>();
+
+
+        for(Assignment assignment: assignments) {
+            Optional<Submission> userSubmission = assignment.getSubmissions().stream().filter(submission -> submission.getEmployee().getId().equals(employeeDetails.getId())).findFirst();
+
+            if (userSubmission.isPresent()) {
+                Submission submission = userSubmission.get();
+                EmployeeAssignmentGradeDTO dto = new EmployeeAssignmentGradeDTO();
+                dto.setAssignmentId(assignment.getId());
+                dto.setAssignmentName(assignment.getTitle());
+                dto.setSubmissionId(submission.getId());
+                dto.setStatus(submission.getStatus());
+
+                if(submission.getStatus().equals(Submission.Status.GRADED))
+                    dto.setGrade(submission.getGrade().getGrade());
+
+                assignmentGradeDTOs.add(dto);
+            }else {
+                EmployeeAssignmentGradeDTO dto = new EmployeeAssignmentGradeDTO();
+                dto.setAssignmentId(assignment.getId());
+                dto.setAssignmentName(assignment.getTitle());
+                dto.setStatus(Submission.Status.PENDING);
+                assignmentGradeDTOs.add(dto);
+            }
+
+
+        }
+        return ResponseEntity.ok(assignmentGradeDTOs);
 
     }
 
