@@ -30,6 +30,9 @@ public class EnrollmentService {
     @Autowired
     private SubmissionRepository submissionRepository;
 
+    @Autowired
+    private FileService fileService;
+
     public String enrollEmployee(Long courseId, Long employeeId) {
         Optional<Course> courseOptional = courseRepository.findById(courseId);
         Optional<Users> employeeOptional = userRepository.findById(employeeId);
@@ -66,6 +69,10 @@ public class EnrollmentService {
     public void unenrollEmployee(Long courseId, Long employeeId) {
 
         List<Submission> submissions = submissionRepository.findByEmployee_IdAndAssignment_Course_Id(employeeId, courseId);
+
+        for(Submission submission: submissions) {
+            fileService.deleteUploadedAssignment(submission.getSubmissionUrl());
+        }
 
         submissionRepository.deleteAll(submissions); // Cascades to delete associated Gradebook entries
 
