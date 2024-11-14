@@ -12,7 +12,7 @@ public class SucessResponseMessageUtil
     {
         SuccessResponseDTO successResponseDTO = new SuccessResponseDTO();
         successResponseDTO.setHttpCode( httpCode );
-        successResponseDTO.setSuccessMessage( successMessage );
+        successResponseDTO.setMessage( successMessage );
 
         if( httpCode == 200 )
             return ResponseEntity.ok( successResponseDTO );

@@ -11,7 +11,7 @@ public class ErrorResponseMessageUtil
     {
         ErrorResponseDTO errorResponseDTO = new ErrorResponseDTO();
         errorResponseDTO.setHttpCode(httpCode);
-        errorResponseDTO.setErrorMessage(errorMessage);
+        errorResponseDTO.setMessage(errorMessage);
 
         return ResponseEntity.status( httpCode ).body( errorResponseDTO );
     }
