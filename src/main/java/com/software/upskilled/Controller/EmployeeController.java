@@ -190,6 +190,24 @@ public class EmployeeController {
         return ResponseEntity.ok(enrollmentService.enrollEmployee(courseId, employee.getId()));
     }
 
+    @PostMapping("/unenroll/{courseId}")
+    public ResponseEntity<String> unenrollFromCourse(@PathVariable Long courseId,
+                                                      Authentication authentication){
+
+        ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(courseId,authentication);
+
+        if (authResponse != null) {
+            return authResponse;
+        }
+
+        String email = authentication.getName();
+        Users employee = userService.findUserByEmail(email);
+
+        enrollmentService.unenrollEmployee(courseId,employee.getId());
+
+        return ResponseEntity.ok("Unenrolled!");
+    }
+
     @GetMapping("/course/{courseId}/announcements")
     public ResponseEntity<?> viewAnnouncements(
             @PathVariable Long courseId, Authentication authentication) {
