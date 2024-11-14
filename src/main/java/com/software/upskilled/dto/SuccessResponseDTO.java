@@ -6,5 +6,5 @@ import lombok.Data;
 public class SuccessResponseDTO
 {
     private int httpCode;
-    private String successMessage;
+    private String message;
 }

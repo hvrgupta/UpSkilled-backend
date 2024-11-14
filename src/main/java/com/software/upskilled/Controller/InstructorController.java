@@ -464,7 +464,7 @@ public class InstructorController {
         }
 
 
-        List<AssignmentResponseDTO> assignmentsList = assignmentService.getAssignmentsByCourse(courseId).stream()
+        List<AssignmentResponseDTO> assignmentsList = assignmentService.getAllAssignmentsSortedByDeadLine(courseId).stream()
                 .map(assignment -> {
 
                     //Create the DTO for the Assignment Details Object
@@ -511,9 +511,9 @@ public class InstructorController {
         else
         {
             //Obtain the set of the submissions and send the details
-            Set<Submission> assignmentSubmissions = assignmentDetails.getSubmissions();
+            List<Submission> assignmentSubmissions = submissionService.getSubmissionsSortedBySubmittedTime( assignmentDetails.getId() );
             if( assignmentSubmissions.isEmpty() )
-                return ResponseEntity.status(200).body("No submissions yet for this assignment");
+                return sucessResponseMessageUtil.createSuccessResponseMessages( HttpStatus.OK.value(), "No submissions yet for this assignment");
             else
             {
                 List<SubmissionResponseDTO> submissionResponseDTOList = new ArrayList<>();

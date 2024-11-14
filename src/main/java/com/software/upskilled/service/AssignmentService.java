@@ -34,7 +34,8 @@ public class AssignmentService {
         assignmentRepository.deleteById(id);
     }
 
-    public List<Assignment> getAllAssignmentsSortedByCreationDate( long courseId ) {
+    //Method that returns all the assignment from today
+    public List<Assignment> getAllAssignmentsSortedByDeadLine( long courseId ) {
         return assignmentRepository.findAssignmentsSortedByDeadline( courseId );
     }
 }

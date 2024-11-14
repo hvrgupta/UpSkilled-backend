@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 public class SubmissionService
 {
@@ -29,6 +31,11 @@ public class SubmissionService
     public Submission getSubmissionByID( long submissionID )
     {
         return submissionRepository.getSubmissionById( submissionID );
+    }
+
+    public List<Submission> getSubmissionsSortedBySubmittedTime( Long assignmentId )
+    {
+        return submissionRepository.getSubmissionsSortedBySubmissionTime( assignmentId );
     }
 
 }

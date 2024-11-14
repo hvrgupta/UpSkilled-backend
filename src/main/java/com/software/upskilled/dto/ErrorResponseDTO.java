@@ -6,5 +6,5 @@ import lombok.Data;
 public class ErrorResponseDTO
 {
     private int httpCode;
-    private String errorMessage;
+    private String message;
 }

@@ -200,8 +200,8 @@ public class EmployeeController {
             return authResponse;
         }
 
-        // Fetch and return the announcements
-        Set<Announcement> announcements = announcementService.getAnnouncementsByCourseId(courseId);
+        // Fetch and return the announcements sorted by the updated first
+        Set<Announcement> announcements = announcementService.getAnnouncementsByCourseId( courseId );
 
         List<AnnouncementRequestDTO> announcementDTOs = announcements.stream()
                 .sorted(Comparator.comparing(Announcement::getUpdatedAt).reversed())
@@ -393,19 +393,9 @@ public class EmployeeController {
             return authResponse;
         }
 
-        /**
-        //Get all the list of assignments sorted by deadline
-        List<Assignment> assignmentDetails = assignmentService.getAllAssignmentsSortedByCreationDate( courseId );
-        //Check if assignmentDetails is missing
-        if( assignmentDetails.isEmpty() )
-            return ResponseEntity.status(404).body("No assignment found for this course");
-        else
-            System.out.println( assignmentDetails.get(0).getTitle()  + " " + assignmentDetails.get(0).getDescription() );
-        **/
-
         //Get the employee details
         Users employeeDetails = userService.findUserByEmail( authentication.getName() );
-        List<AssignmentResponseDTO> assignmentsList = assignmentService.getAssignmentsByCourse(courseId)
+        List<AssignmentResponseDTO> assignmentsList = assignmentService.getAllAssignmentsSortedByDeadLine(courseId)
                 .stream().map(assignment ->
                 {
                     //Get the submission of the assignment pertaining to the User

@@ -5,6 +5,7 @@ import com.software.upskilled.repository.AnnouncementRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -22,6 +23,11 @@ public class AnnouncementService {
 
     public Set<Announcement> getAnnouncementsByCourseId(Long courseId) {
         return announcementRepository.findByCourseId(courseId);
+    }
+
+    public List<Announcement> findAnnouncementSortedByUpdateTime( Long courseId )
+    {
+        return announcementRepository.getAnnouncementsSortedByUpdateTime( courseId );
     }
 
     public void deleteAnnouncement(Long id) {
