@@ -315,6 +315,7 @@ public class FileServiceImpl implements FileService {
 //    View buckets
 
     @Override
+    @Async
     public byte[] viewCourseMaterial( String courseMaterialURL)
     {
         try {
@@ -346,6 +347,7 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
+    @Async
     public byte[] viewAssignmentSubmission(String assignmentSubmissionURL) {
         try {
             S3Object object = s3Client.getObject(assignmentBucketName,assignmentSubmissionURL);

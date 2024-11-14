@@ -330,12 +330,15 @@ public class EmployeeController {
         CourseMaterial courseMaterial = courseMaterialService.getCourseMaterialById( courseMaterialId );
 
         final byte[] data = fileService.viewCourseMaterial( courseMaterial.getCourseMaterialUrl());
+
         final ByteArrayResource resource = new ByteArrayResource(data);
+
+        String courseMaterialName = courseMaterial.getCourseMaterialUrl().split("/")[2];
 
         return ResponseEntity
                 .ok()
                 .contentLength(data.length)
-                .header("Content-disposition", "attachment; filename=\"" + courseMaterial.getCourseMaterialUrl() + "\"")
+                .header("Content-disposition", "attachment; filename=\"" + courseMaterialName + "\"")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(resource);
 
