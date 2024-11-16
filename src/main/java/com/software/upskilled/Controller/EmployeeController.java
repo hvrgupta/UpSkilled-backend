@@ -316,8 +316,8 @@ public class EmployeeController {
         }
     }
 
-    @GetMapping("/getCourseMaterial/{courseId}/{materialTitle}")
-    public ResponseEntity<?> getAllCourseMaterials(@PathVariable Long courseId, @PathVariable("materialTitle") String courseMaterialTitle, Authentication authentication)
+    @GetMapping("/getCourseMaterial/{courseId}/{courseMaterialId}")
+    public ResponseEntity<?> getCourseMaterialById(@PathVariable Long courseId, @PathVariable("courseMaterialId") Long courseMaterialId, Authentication authentication)
     {
 
         ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(courseId,authentication);
@@ -327,7 +327,7 @@ public class EmployeeController {
         }
 
         //Fetch the corresponding course material details
-        CourseMaterial courseMaterial = courseMaterialService.getCourseMaterialByTitle( courseMaterialTitle.strip() );
+        CourseMaterial courseMaterial = courseMaterialService.getCourseMaterialById( courseMaterialId );
 
         final byte[] data = fileService.viewCourseMaterial( courseMaterial.getCourseMaterialUrl());
 
