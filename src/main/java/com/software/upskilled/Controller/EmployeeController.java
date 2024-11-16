@@ -658,7 +658,7 @@ public class EmployeeController {
     }
 
     @GetMapping( "/course/{courseId}/message/getSentMessages" )
-    public ResponseEntity<?> getSentMessagesFromEmployee( @PathVariable("courseId") Long courseId, Authentication authentication )
+    public ResponseEntity<?> getMessagesSentToInstructor( @PathVariable("courseId") Long courseId, Authentication authentication )
     {
         //Check if the employee belongs to the particular course
         ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(courseId, authentication);
@@ -673,7 +673,7 @@ public class EmployeeController {
         userDetailsObject.put("name", employeeDetails.getFirstName() + " " + employeeDetails.getLastName());
         userDetailsObject.put("email", employeeDetails.getEmail());
         //Fetch the list of the messages sent by the Employee for the particular course
-        Optional<List<Message>> optionalSentMessageList = messageService.getAllSentMessagesForUser( employeeDetails.getId(), courseId );
+        Optional<List<Message>> optionalSentMessageList = messageService.getAllSentMessagesForEmployee( employeeDetails.getId(), courseId );
         //if the List of Messages is null, create an empty response object and send the response
         if( optionalSentMessageList.isPresent() )
         {
@@ -686,13 +686,13 @@ public class EmployeeController {
         }
         else
         {
-            CourseMessagesResponseDTO courseMessagesResponseDTO = dtoObjectsCreator.createCourseMessagesResponseDTO( userDetailsObject, new ArrayList<>() );
-            return ResponseEntity.ok( courseMessagesResponseDTO );
+            CourseMessagesResponseDTO courseSentMessagesResponseDTO = dtoObjectsCreator.createCourseMessagesResponseDTO( userDetailsObject, new ArrayList<>() );
+            return ResponseEntity.ok( courseSentMessagesResponseDTO );
         }
     }
 
     @GetMapping("/course/{courseId}/message/getReceivedMessages")
-    public ResponseEntity<?> getReceivedMessagesFromInstructor( @PathVariable Long courseId , Authentication authentication )
+    public ResponseEntity<?> getMessagesReceivedFromInstructor( @PathVariable Long courseId , Authentication authentication )
     {
         //Check if the employee belongs to the particular course
         ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(courseId, authentication);
@@ -707,7 +707,7 @@ public class EmployeeController {
         userDetailsObject.put("name", employeeDetails.getFirstName() + " " + employeeDetails.getLastName());
         userDetailsObject.put("email", employeeDetails.getEmail());
         //Fetch the list of the messages sent by the Employee for the particular course
-        Optional<List<Message>> optionalResponseMessageList = messageService.getAllReceivedMessageForUser( employeeDetails.getId(), courseId );
+        Optional<List<Message>> optionalResponseMessageList = messageService.getAllReceivedMessageForEmployee( employeeDetails.getId(), courseId );
         //if the List of Messages is null, create an empty response object and send the response
         if( optionalResponseMessageList.isPresent() )
         {
@@ -722,6 +722,33 @@ public class EmployeeController {
         {
             CourseMessagesResponseDTO courseReceivedMessagesResponseDTO = dtoObjectsCreator.createCourseMessagesResponseDTO( userDetailsObject, new ArrayList<>() );
             return ResponseEntity.ok( courseReceivedMessagesResponseDTO );
+        }
+    }
+
+    @PutMapping("/message/readMessage")
+    public ResponseEntity<?> setMessageStatusToRead( @RequestParam("messageId") Long messageId, @RequestParam("courseId") Long courseId, Authentication authentication )
+    {
+        //Check if the instructor is the valid instructor for the course
+        ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(courseId, authentication);
+
+        if (authResponse != null) {
+            return authResponse;
+        }
+
+        //Get the Message Details
+        Optional<Message> messageDetails = messageService.getMessageById( messageId );
+        //Check if the message doesn't exist
+        if (messageDetails.isPresent()) {
+            Message messageDetail = messageDetails.get();
+            //Set the status of the message to read
+            messageDetail.setIsRead( true );
+            //Save the details to the database
+            messageService.updateReadStatusOfMessage( messageDetail );
+            return ResponseEntity.ok(  dtoObjectsCreator.createMessageResponseDTO( messageDetail )  );
+        }
+        else
+        {
+            return errorResponseMessageUtil.createErrorResponseMessages( HttpStatus.NO_CONTENT.value(), "The particular Message ID doesn't exist");
         }
     }
 
