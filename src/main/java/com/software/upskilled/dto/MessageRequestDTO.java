@@ -9,6 +9,6 @@ import java.util.List;
 public class MessageRequestDTO
 {
     private Long courseId;
-    private List<String> receiverIds;
+    private List<Long> receiverIds;
     private String message;
 }
