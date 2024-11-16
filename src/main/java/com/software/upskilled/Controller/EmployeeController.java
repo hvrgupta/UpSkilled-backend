@@ -53,6 +53,9 @@ public class EmployeeController {
 
     @Autowired
     private AssignmentService assignmentService;
+
+    @Autowired
+    private MessageService messageService;
     
     @Autowired
     private EmployeeCourseAuth employeeCourseAuth;
@@ -65,8 +68,12 @@ public class EmployeeController {
 
     @Autowired
     private CreateDTOObjectsImpl dtoObjectsCreator;
+
     @Autowired
     private ErrorResponseMessageUtil errorResponseMessageUtil;
+
+
+
     @Autowired
     private CoursePropertyValidator coursePropertyValidator;
 
@@ -612,6 +619,110 @@ public class EmployeeController {
         }
         return ResponseEntity.ok(assignmentGradeDTOs);
 
+    }
+
+
+    @PostMapping("/message/sendMessage")
+    public ResponseEntity<?> sendMessageToInstructor( @RequestBody MessageRequestDTO messageRequestDTO, Authentication authentication )
+    {
+        //Obtain the courseId from the messageRequestDTO object
+        Long courseId = messageRequestDTO.getCourseId();
+        if( courseId == null )
+            return errorResponseMessageUtil.createErrorResponseMessages(HttpStatus.BAD_REQUEST.value(), "CourseID is required in the payload");
+
+        ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(courseId, authentication);
+        //If authResponse is not null, then send the authResponse
+        if (authResponse != null) {
+            return authResponse;
+        }
+        //Else get the employee details
+        Users employeeDetails = userService.findUserByEmail( authentication.getName() );
+        //Get the Course Details so that we can get the instructor name
+        Course courseDetails = courseService.findCourseById( courseId );
+        //Get the Instructor Details
+        Users instructorDetails = courseDetails.getInstructor();
+        //Create the message details object
+        Message newMessage = Message.builder().content( messageRequestDTO.getMessage() )
+                .isRead( false )
+                .sender( employeeDetails )
+                .recipient( instructorDetails )
+                .course( courseDetails )
+                .build();
+        //Save the Message Details to the Database and get the saved object
+        Message savedMessage = messageService.createNewMessage( newMessage );
+        //Create the Message Response DTO Object
+        MessageResponseDTO messageResponseDTO = dtoObjectsCreator.createMessageResponseDTO( savedMessage );
+
+        //Return Response Entity Object
+        return ResponseEntity.ok( messageResponseDTO );
+    }
+
+    @GetMapping( "/course/{courseId}/message/getSentMessages" )
+    public ResponseEntity<?> getSentMessagesFromEmployee( @PathVariable("courseId") Long courseId, Authentication authentication )
+    {
+        //Check if the employee belongs to the particular course
+        ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(courseId, authentication);
+        //If authResponse is not null, then send the authResponse
+        if (authResponse != null) {
+            return authResponse;
+        }
+        //Get the employeeDetails
+        Users employeeDetails = userService.findUserByEmail( authentication.getName() );
+        //Put the employee details in a map
+        Map<String, String> userDetailsObject = new HashMap<>();
+        userDetailsObject.put("name", employeeDetails.getFirstName() + " " + employeeDetails.getLastName());
+        userDetailsObject.put("email", employeeDetails.getEmail());
+        //Fetch the list of the messages sent by the Employee for the particular course
+        Optional<List<Message>> optionalSentMessageList = messageService.getAllSentMessagesForUser( employeeDetails.getId(), courseId );
+        //if the List of Messages is null, create an empty response object and send the response
+        if( optionalSentMessageList.isPresent() )
+        {
+            List<Message> sentMessagesOfEmployee = optionalSentMessageList.get();
+            //Get the CourseMessages Response DTO object
+            CourseMessagesResponseDTO courseSentMessagesResponseDTO = dtoObjectsCreator.createCourseMessagesResponseDTO( userDetailsObject, sentMessagesOfEmployee );
+
+            //Send the created response DTO object
+            return ResponseEntity.ok( courseSentMessagesResponseDTO );
+        }
+        else
+        {
+            CourseMessagesResponseDTO courseMessagesResponseDTO = dtoObjectsCreator.createCourseMessagesResponseDTO( userDetailsObject, new ArrayList<>() );
+            return ResponseEntity.ok( courseMessagesResponseDTO );
+        }
+    }
+
+    @GetMapping("/course/{courseId}/message/getReceivedMessages")
+    public ResponseEntity<?> getReceivedMessagesFromInstructor( @PathVariable Long courseId , Authentication authentication )
+    {
+        //Check if the employee belongs to the particular course
+        ResponseEntity<String> authResponse = employeeCourseAuth.validateEmployeeForCourse(courseId, authentication);
+        //If authResponse is not null, then send the authResponse
+        if (authResponse != null) {
+            return authResponse;
+        }
+        //Get the employeeDetails
+        Users employeeDetails = userService.findUserByEmail( authentication.getName() );
+        //Put the employee details in a map
+        Map<String, String> userDetailsObject = new HashMap<>();
+        userDetailsObject.put("name", employeeDetails.getFirstName() + " " + employeeDetails.getLastName());
+        userDetailsObject.put("email", employeeDetails.getEmail());
+        //Fetch the list of the messages sent by the Employee for the particular course
+        Optional<List<Message>> optionalResponseMessageList = messageService.getAllReceivedMessageForUser( employeeDetails.getId(), courseId );
+        //if the List of Messages is null, create an empty response object and send the response
+        if( optionalResponseMessageList.isPresent() )
+        {
+            List<Message> receivedMessagesOfEmployee = optionalResponseMessageList.get();
+            //Get the CourseMessages Response DTO object
+            CourseMessagesResponseDTO courseReceivedMessagesResponseDTO = dtoObjectsCreator.createCourseMessagesResponseDTO( userDetailsObject, receivedMessagesOfEmployee );
+
+            //Send the created response DTO object
+            return ResponseEntity.ok( courseReceivedMessagesResponseDTO );
+        }
+        else
+        {
+            CourseMessagesResponseDTO courseReceivedMessagesResponseDTO = dtoObjectsCreator.createCourseMessagesResponseDTO( userDetailsObject, new ArrayList<>() );
+            return ResponseEntity.ok( courseReceivedMessagesResponseDTO );
+        }
     }
 
 
