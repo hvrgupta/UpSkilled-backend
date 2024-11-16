@@ -33,4 +33,8 @@ public class Message {
 
     @Column(name = "is_read", nullable = false)
     private Boolean isRead = false;  // Message status
+
+    @ManyToOne
+    @JoinColumn( name = "course_id")
+    private Course course;
 }

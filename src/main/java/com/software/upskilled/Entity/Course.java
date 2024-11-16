@@ -64,6 +64,9 @@ public class Course {
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL)
     private Set<Assignment> assignments;
 
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL)
+    private Set<Message> messages;
+
     public enum Status {
         ACTIVE,
         INACTIVE
