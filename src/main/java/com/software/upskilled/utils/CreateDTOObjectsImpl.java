@@ -1,13 +1,12 @@
 package com.software.upskilled.utils;
 
-import com.software.upskilled.Entity.Assignment;
-import com.software.upskilled.Entity.Gradebook;
-import com.software.upskilled.Entity.Submission;
-import com.software.upskilled.Entity.Users;
+import com.software.upskilled.Entity.*;
 import com.software.upskilled.dto.*;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class CreateDTOObjectsImpl implements CreateDTOObjects
@@ -101,5 +100,41 @@ public class CreateDTOObjectsImpl implements CreateDTOObjects
 
         //Return the Response
         return assignmentResponseDTO;
+    }
+
+    @Override
+    public MessageResponseDTO createMessageResponseDTO(Message messageDetails) {
+        //Creating the MessageResponse DTO Object
+        MessageResponseDTO messageResponseDTO = new MessageResponseDTO();
+
+        //Setting the details
+        messageResponseDTO.setMessageId( messageDetails.getId() );
+        messageResponseDTO.setMessage( messageDetails.getContent() );
+        messageResponseDTO.setIsRead( messageDetails.getIsRead() );
+        messageResponseDTO.setSentAt( messageDetails.getSentAt() );
+
+        //Returning the DTO object
+        return   messageResponseDTO;
+    }
+
+    @Override
+    public CourseMessagesResponseDTO createCourseMessagesResponseDTO(Map<String, String> userDetails, List<Message> messages) {
+
+        //Create the CourseMessageResponseDTO object
+        CourseMessagesResponseDTO courseMessagesResponseDTO = new CourseMessagesResponseDTO();
+
+        //Set the userDetails
+        courseMessagesResponseDTO.setUser( userDetails );
+
+        //Iterate over the messages and create the List of the MessageResponseDTO
+        List<MessageResponseDTO> messageResponseDTOList = messages.stream().map(this::createMessageResponseDTO).toList();
+
+        //Set the messageResponseDTO list
+        courseMessagesResponseDTO.setMessages( messageResponseDTOList );
+
+        //Return the created DTO object
+        return courseMessagesResponseDTO;
+
+
     }
 }

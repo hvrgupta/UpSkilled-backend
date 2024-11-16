@@ -15,6 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -68,6 +69,8 @@ public class InstructorController {
 
     @Autowired
     private final CreateDTOObjectsImpl dtoObjectsCreator;
+    @Autowired
+    private MessageService messageService;
 
 
     @GetMapping("/hello")
@@ -943,5 +946,217 @@ public class InstructorController {
 
         }
     }
+
+    @PostMapping("/message/sendMessage")
+    public ResponseEntity<?> sendMessageToEmployees( @RequestBody MessageRequestDTO messageRequestDTO, Authentication authentication )
+    {
+        //Check if the courseId is present in the messageRequestDTO. If null then send error response
+        if( messageRequestDTO.getCourseId() == null )
+            return errorResponseMessageUtil.createErrorResponseMessages( HttpStatus.BAD_REQUEST.value(), "Course Id needs to be present in the message request");
+
+        Long courseId = messageRequestDTO.getCourseId();
+
+        String email = authentication.getName();
+
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseId, authentication);
+
+        if (authResponse != null) {
+            return authResponse;
+        }
+
+        //Get the list of all the receiverIDs that the instructor has to send messages to
+        List<Long> employeeIds = messageRequestDTO.getReceiverIds();
+        //Get the course Details;
+        Course courseDetails = courseService.findCourseById(courseId);
+        if( employeeIds == null || employeeIds.isEmpty() )
+            return errorResponseMessageUtil.createErrorResponseMessages( HttpStatus.BAD_REQUEST.value(), "Employee Ids need to be present in order for the Instructor to send messages");
+
+        //Create a list of MessageResponseDTO  List; Skip the employee IDs which are not part of the course
+        List<MessageResponseDTO> messageResponsesDTOList = employeeIds.stream().filter( employeeId -> {
+
+            //Check if the employeeId belongs to this course
+            List<Enrollment> employeeEnrollmentRecord = courseDetails.getEnrollments().stream().filter(enrollment -> {
+                return Objects.equals(enrollment.getEmployee().getId(), employeeId);
+            }).toList();
+
+            //Filters the list on the basis of whether the employee belongs to the list
+            return !employeeEnrollmentRecord.isEmpty();
+        }).map( filteredEmployeeId ->{
+
+            //Get the employee details
+            Users employeeDetails = userService.findUserById( filteredEmployeeId );
+            //Save the message object in the database
+            Message instructorMessage = Message.builder().sender( courseDetails.getInstructor() )
+                    .recipient( employeeDetails ).isRead( false ).course( courseDetails ).content( messageRequestDTO.getMessage() ).build();
+
+            //Save the message in the database
+            Message savedMessageDetails = messageService.createNewMessage( instructorMessage );
+
+            //Create the Message Response DTO object by invoking the factory
+
+            return dtoObjectsCreator.createMessageResponseDTO( savedMessageDetails );
+
+        }).toList();
+
+        //Send all the details of the messages to the Instructor
+        return ResponseEntity.ok( messageResponsesDTOList );
+    }
+
+    @GetMapping( "/course/{courseId}/message/getSentMessages" )
+    public ResponseEntity<?> getMessagesSentToEmployee( @PathVariable("courseId") Long courseId, Authentication authentication )
+    {
+        //Check if the employee belongs to the particular course
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseId, authentication);
+        //If authResponse is not null, then send the authResponse
+        if (authResponse != null) {
+            return authResponse;
+        }
+
+        //Get the courseDetails of the Particular courseId
+        Course courseDetails = courseService.findCourseById(courseId);
+        //Get the instructor Details from the course
+        Users instructorDetails = courseDetails.getInstructor();
+
+        //Get the unique List of employee who are the recipients of the messages from the Instructor
+        List<Long> employeeIds = messageService.getUniqueListOfRecipientEmployeesForInstructor( instructorDetails.getId(), courseDetails.getId() );
+        //Check if the employeeIds is empty
+        if( employeeIds == null || employeeIds.isEmpty() )
+            return ResponseEntity.ok( new ArrayList<>() );
+        else
+        {
+            //We basically now create the entire array of the message object by looping over the messages, additionally, we have to group the messages by the user.
+            List< CourseMessagesResponseDTO > courseMessagesResponseDTOList = employeeIds.stream().map( employeeId -> {
+
+                //Get the employee details associated with the employeeID
+                Users employeeDetails = userService.findUserById( employeeId );
+                //Set the User Details in a map
+                Map<String, String> userDetailsObject = new HashMap<>();
+                userDetailsObject.put("name", employeeDetails.getFirstName()+ " " + employeeDetails.getLastName());
+                userDetailsObject.put("email", employeeDetails.getEmail());
+
+                //Now we fetch the messages where this employee is the recipient of the message for this courseId
+                Optional<List<Message>> receivedMessagesByEmployee = messageService.getAllReceivedMessageForEmployee( employeeId, courseDetails.getId() );
+                //Check if the messages exist
+                if( receivedMessagesByEmployee.isPresent() )
+                {
+                    //Get the messages received by the Employee from this Instructor for this Particular Course
+                    List<Message> messages = receivedMessagesByEmployee.get();
+
+                    //Create the course message Response DTO list
+                    return dtoObjectsCreator.createCourseMessagesResponseDTO( userDetailsObject, messages );
+                }
+                else
+                {
+                    return dtoObjectsCreator.createCourseMessagesResponseDTO( userDetailsObject, new ArrayList<>() );
+                }
+            }).toList();
+            return ResponseEntity.ok( courseMessagesResponseDTOList );
+        }
+    }
+
+    @GetMapping( "/course/{courseId}/message/getReceivedMessages" )
+    public ResponseEntity<?> getMessagesReceivedFromEmployee( @PathVariable("courseId") Long courseId, Authentication authentication )
+    {
+        //Check if the employee belongs to the particular course
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseId, authentication);
+        //If authResponse is not null, then send the authResponse
+        if (authResponse != null) {
+            return authResponse;
+        }
+
+        //Get the courseDetails of the Particular courseId
+        Course courseDetails = courseService.findCourseById(courseId);
+        //Get the instructor Details from the course
+        Users instructorDetails = courseDetails.getInstructor();
+
+        //Get the unique List of employee who have sent the mail to the Instructor
+        List<Long> employeeIds = messageService.getUniqueListOfSenderEmployeesForInstructor( instructorDetails.getId(), courseDetails.getId() );
+        //Check if the employeeIds is empty
+        if( employeeIds == null || employeeIds.isEmpty() )
+            return ResponseEntity.ok( new ArrayList<>() );
+        else
+        {
+            //We basically now create the entire array of the message object by looping over the messages, additionally, we have to group the messages by the user.
+            List< CourseMessagesResponseDTO > courseMessagesResponseDTOList = employeeIds.stream().map( employeeId -> {
+
+                //Get the employee details associated with the employeeID
+                Users employeeDetails = userService.findUserById( employeeId );
+                //Set the User Details in a map
+                Map<String, String> userDetailsObject = new HashMap<>();
+                userDetailsObject.put("name", employeeDetails.getFirstName()+ " " + employeeDetails.getLastName());
+                userDetailsObject.put("email", employeeDetails.getEmail());
+
+                //Now we fetch the messages where this employee is the recipient of the message for this courseId
+                Optional<List<Message>> sentMessagesByEmployee = messageService.getAllSentMessagesForEmployee( employeeId, courseDetails.getId() );
+                //Check if the messages exist
+                if( sentMessagesByEmployee.isPresent() )
+                {
+                    //Get the messages received by the Employee from this Instructor for this Particular Course
+                    List<Message> messages = sentMessagesByEmployee.get();
+
+                    //Create the course message Response DTO list
+                    return dtoObjectsCreator.createCourseMessagesResponseDTO( userDetailsObject, messages );
+                }
+                else
+                {
+                    return dtoObjectsCreator.createCourseMessagesResponseDTO( userDetailsObject, new ArrayList<>() );
+                }
+            }).toList();
+            return ResponseEntity.ok( courseMessagesResponseDTOList );
+        }
+    }
+
+    @PutMapping("/message/readMessage")
+    public ResponseEntity<?> setMessageStatusToRead( @RequestParam("messageId") Long messageId, @RequestParam("courseId") Long courseId, Authentication authentication )
+    {
+        //Check if the instructor is the valid instructor for the course
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseId, authentication);
+
+        if (authResponse != null) {
+            return authResponse;
+        }
+
+        //Get the Message Details
+        Optional<Message> messageDetails = messageService.getMessageById( messageId );
+        //Check if the message doesn't exist
+        if (messageDetails.isPresent()) {
+            Message messageDetail = messageDetails.get();
+            //Set the status of the message to read
+            messageDetail.setIsRead( true );
+            //Save the details to the database
+            messageService.updateReadStatusOfMessage( messageDetail );
+            return ResponseEntity.ok(  dtoObjectsCreator.createMessageResponseDTO( messageDetail )  );
+        }
+        else
+        {
+            return errorResponseMessageUtil.createErrorResponseMessages( HttpStatus.NO_CONTENT.value(), "The particular Message ID doesn't exist");
+        }
+    }
+
+    @GetMapping("/course/{courseId}/getAllEmployees")
+    public ResponseEntity<?> getAllEnrolledStudentsInCourse( @PathVariable("courseId") Long courseId, Authentication authentication )
+    {
+        //Check if the instructor is the valid instructor for the course
+        ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseId, authentication);
+
+        if (authResponse != null) {
+            return authResponse;
+        }
+
+        //Get the course details
+        Course courseDetails = courseService.findCourseById(courseId);
+        //Get all the enrollments for the particular course
+        Set<Enrollment> courseEnrollmentDetails = courseDetails.getEnrollments();
+        //Get the list of the User DTO
+        List<CreateUserDTO> userDTOList = courseEnrollmentDetails.stream().map( enrollment -> {
+           //Get the employee details from the enrollment object
+           Users employeeDetails = enrollment.getEmployee();
+           return dtoObjectsCreator.createUserDTO( employeeDetails );
+
+        }).toList();
+        return ResponseEntity.ok( userDTOList );
+    }
+
+
 
 }
