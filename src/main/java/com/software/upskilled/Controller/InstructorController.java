@@ -1123,10 +1123,10 @@ public class InstructorController {
         //Get the instructor detail
         Users instructorDetails = courseDetails.getInstructor();
 
-        int numberOfRowsUpdated = messageService.updateReadStatusOfMessagesReceivedByEmployee( employeeId, instructorDetails.getId(), courseId );
+        int numberOfRowsUpdated = messageService.updateReadStatusOfMessagesReceivedByEmployee( instructorDetails.getId(), employeeId, courseId );
 
         //If the number of RowsUpdates is 0, then send error message else send ok
-        if( numberOfRowsUpdated != 0 )
+        if( numberOfRowsUpdated == 0 )
             return errorResponseMessageUtil.createErrorResponseMessages( HttpStatus.INTERNAL_SERVER_ERROR.value(), "Failed to update teh read status of the messages");
         else
             return sucessResponseMessageUtil.createSuccessResponseMessages( HttpStatus.OK.value(), "The read status of all the messages have been updated");
