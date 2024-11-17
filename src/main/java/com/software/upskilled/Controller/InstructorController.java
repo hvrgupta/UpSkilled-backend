@@ -1107,7 +1107,7 @@ public class InstructorController {
     }
 
     @PutMapping("/message/readMessage")
-    public ResponseEntity<?> setMessageStatusToRead( @RequestParam("messageId") Long messageId, @RequestParam("courseId") Long courseId, Authentication authentication )
+    public ResponseEntity<?> setMessageStatusToRead( @RequestParam("employeeId") Long employeeId, @RequestParam("courseId") Long courseId, Authentication authentication )
     {
         //Check if the instructor is the valid instructor for the course
         ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseId, authentication);
@@ -1116,21 +1116,18 @@ public class InstructorController {
             return authResponse;
         }
 
-        //Get the Message Details
-        Optional<Message> messageDetails = messageService.getMessageById( messageId );
-        //Check if the message doesn't exist
-        if (messageDetails.isPresent()) {
-            Message messageDetail = messageDetails.get();
-            //Set the status of the message to read
-            messageDetail.setIsRead( true );
-            //Save the details to the database
-            messageService.updateReadStatusOfMessage( messageDetail );
-            return ResponseEntity.ok(  dtoObjectsCreator.createMessageResponseDTO( messageDetail )  );
-        }
+        //Get the course details from the database
+        Course courseDetails = courseService.findCourseById( courseId );
+        //Get the instructor detail
+        Users instructorDetails = courseDetails.getInstructor();
+
+        int numberOfRowsUpdated = messageService.updateReadStatusOfMessagesReceivedByEmployee( employeeId, instructorDetails.getId(), courseId );
+
+        //If the number of RowsUpdates is 0, then send error message else send ok
+        if( numberOfRowsUpdated != 0 )
+            return errorResponseMessageUtil.createErrorResponseMessages( HttpStatus.INTERNAL_SERVER_ERROR.value(), "Failed to update teh read status of the messages");
         else
-        {
-            return errorResponseMessageUtil.createErrorResponseMessages( HttpStatus.NO_CONTENT.value(), "The particular Message ID doesn't exist");
-        }
+            return sucessResponseMessageUtil.createSuccessResponseMessages( HttpStatus.OK.value(), "The read status of all the messages have been updated");
     }
 
     @GetMapping("/course/{courseId}/getAllEmployees")

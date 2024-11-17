@@ -59,4 +59,9 @@ public class MessageService
         return messageRepository.save( existingMessage );
     }
 
+    public int updateReadStatusOfMessagesReceivedByEmployee( Long employeeId, Long instructorId, Long courseId )
+    {
+        return messageRepository.updateReadStatusOfReceivedMessagesForEmployee( employeeId, instructorId, courseId );
+    }
+
 }

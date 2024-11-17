@@ -32,5 +32,9 @@ public interface MessageRepository extends JpaRepository<Message, Long>
 
     public Message getMessageById(long id);
 
-
+    @Transactional
+    @Modifying( flushAutomatically = true )
+    @Query("update Message mssg set mssg.isRead = true where mssg.recipient.id = :recipientId and mssg.sender.id = :senderId and mssg.course.id = :courseId and mssg.isRead = false")
+    public int updateReadStatusOfReceivedMessagesForEmployee( @Param("recipientId") Long recipientId, @Param("senderId") Long senderId,
+                                                              @Param("courseId") Long courseId );
 }
