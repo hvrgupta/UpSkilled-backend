@@ -42,25 +42,6 @@ public class AdminController {
     @Autowired
     private ErrorResponseMessageUtil errorResponseMessageUtil;
 
-    @GetMapping("/hello")
-    public String hello(){
-        return "Hello Admin";
-    }
-
-    @GetMapping("/me")
-    public CreateUserDTO getCurrentUser(@AuthenticationPrincipal Users user) {
-        CreateUserDTO userDTO = new CreateUserDTO();
-        userDTO.setId(user.getId());
-        userDTO.setEmail(user.getEmail());
-        userDTO.setRole(user.getRole());
-        userDTO.setPassword("*******");
-        userDTO.setFirstName(user.getFirstName());
-        userDTO.setLastName(user.getLastName());
-        userDTO.setDesignation(user.getDesignation());
-        userDTO.setStatus(user.getStatus());
-        return userDTO;
-    }
-
     @GetMapping("/listInstructors")
     public ResponseEntity<List<CreateUserDTO>> getInstructorsList() {
 

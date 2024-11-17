@@ -10,10 +10,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
@@ -82,7 +82,7 @@ public class AuthController {
                 user.setStatus(Users.Status.ACTIVE);
                 usersDetailsService.createUser(user);
             }else {
-                throw new Exception("Role specified is incorrect");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Role specified is incorrect");
             }
 
             return ResponseEntity.status(HttpStatus.CREATED).body("User registered successfully!");
@@ -92,7 +92,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public String login(@RequestBody AuthRequest authRequest) throws Exception {
+    public ResponseEntity<String> login(@RequestBody AuthRequest authRequest) throws Exception {
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(authRequest.getEmail(), authRequest.getPassword())
@@ -100,13 +100,22 @@ public class AuthController {
 
             if(authentication.isAuthenticated()) {
                 Users user = usersDetailsService.findUserByEmail(authRequest.getEmail());
-                return jwtUtil.generateToken(user);
+                String token = jwtUtil.generateToken(user);
+                return ResponseEntity.ok(token);
+            }else {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body("Invalid username or password");
             }
 
+        } catch (BadCredentialsException e) {
+            // Handle invalid username or password exception
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Invalid username or password");
         } catch (Exception e) {
-            throw new Exception("Invalid username or password", e);
+            // Catch any other unexpected exception
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Server error: " + e.getMessage());
         }
-        return "";
     }
 
     @PostMapping("/logout")
@@ -120,10 +129,6 @@ public class AuthController {
     public ResponseEntity<String> updateUser(@RequestBody CreateUserDTO userDTO, Authentication authentication) {
         try {
             Users user = usersDetailsService.findUserByEmail(authentication.getName());
-
-            if(user == null) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User Not Found!");
-            }
 
             if(userDTO.getPassword().length() < 6) {
                 return ResponseEntity.badRequest().body("Password should be greater than 6");
