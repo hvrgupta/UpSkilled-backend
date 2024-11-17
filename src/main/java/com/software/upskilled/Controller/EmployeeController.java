@@ -1,10 +1,8 @@
 package com.software.upskilled.Controller;
 
-
 import com.software.upskilled.Entity.*;
 import com.software.upskilled.dto.CourseMaterialDTO;
 import com.software.upskilled.dto.CourseInfoDTO;
-import com.software.upskilled.dto.CreateUserDTO;
 import com.software.upskilled.Entity.Announcement;
 import com.software.upskilled.Entity.Course;
 import com.software.upskilled.Entity.CourseMaterial;
@@ -22,7 +20,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -72,29 +69,9 @@ public class EmployeeController {
     @Autowired
     private ErrorResponseMessageUtil errorResponseMessageUtil;
 
-
-
     @Autowired
     private CoursePropertyValidator coursePropertyValidator;
 
-    @GetMapping("/hello")
-    public String hello(){
-        return "Hello Employee";
-    }
-
-    @GetMapping("/me")
-    public CreateUserDTO getCurrentUser(@AuthenticationPrincipal Users user) {
-        CreateUserDTO userDTO = new CreateUserDTO();
-        userDTO.setId(user.getId());
-        userDTO.setEmail(user.getEmail());
-        userDTO.setRole(user.getRole());
-        userDTO.setPassword("*******");
-        userDTO.setFirstName(user.getFirstName());
-        userDTO.setLastName(user.getLastName());
-        userDTO.setDesignation(user.getDesignation());
-        userDTO.setStatus(user.getStatus());
-        return userDTO;
-    }
     @GetMapping("/courses")
     public ResponseEntity<List<CourseInfoDTO>> viewCourses(Authentication authentication) {
 
