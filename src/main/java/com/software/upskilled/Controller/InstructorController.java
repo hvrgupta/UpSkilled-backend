@@ -1033,6 +1033,7 @@ public class InstructorController {
                 Map<String, String> userDetailsObject = new HashMap<>();
                 userDetailsObject.put("name", employeeDetails.getFirstName()+ " " + employeeDetails.getLastName());
                 userDetailsObject.put("email", employeeDetails.getEmail());
+                userDetailsObject.put("employeeId", String.valueOf( employeeDetails.getId()));
 
                 //Now we fetch the messages where this employee is the recipient of the message for this courseId
                 Optional<List<Message>> receivedMessagesByEmployee = messageService.getAllReceivedMessageForEmployee( employeeId, courseDetails.getId() );
@@ -1085,6 +1086,7 @@ public class InstructorController {
                 Map<String, String> userDetailsObject = new HashMap<>();
                 userDetailsObject.put("name", employeeDetails.getFirstName()+ " " + employeeDetails.getLastName());
                 userDetailsObject.put("email", employeeDetails.getEmail());
+                userDetailsObject.put("employeeId", String.valueOf( employeeDetails.getId()));
 
                 //Now we fetch the messages where this employee is the recipient of the message for this courseId
                 Optional<List<Message>> sentMessagesByEmployee = messageService.getAllSentMessagesForEmployee( employeeId, courseDetails.getId() );
