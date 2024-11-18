@@ -4,6 +4,7 @@ import com.software.upskilled.Entity.Announcement;
 import com.software.upskilled.repository.AnnouncementRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Set;
@@ -32,5 +33,10 @@ public class AnnouncementService {
 
     public void deleteAnnouncement(Long id) {
         announcementRepository.deleteById(id);
+    }
+
+    @Transactional
+    public void deleteAnnouncementsByCourseId(Long courseId) {
+        announcementRepository.deleteByCourseId(courseId);
     }
 }

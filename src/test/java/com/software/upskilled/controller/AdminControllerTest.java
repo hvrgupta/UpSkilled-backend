@@ -4,9 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.software.upskilled.Entity.Course;
 import com.software.upskilled.Entity.Users;
 import com.software.upskilled.dto.CourseDTO;
-import com.software.upskilled.service.CourseService;
-import com.software.upskilled.service.FileService;
-import com.software.upskilled.service.UserService;
+import com.software.upskilled.service.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +22,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -42,6 +41,15 @@ public class AdminControllerTest {
 
     @MockBean
     private FileService fileService;
+
+    @MockBean
+    private AssignmentService assignmentService;
+
+    @MockBean
+    private AnnouncementService announcementService;
+
+    @MockBean
+    private CourseMaterialService courseMaterialService;
 
     @Test
     public void testGetInstructorsList() throws Exception {
@@ -540,13 +548,137 @@ public class AdminControllerTest {
                 .andDo(print());
     }
 
+    @Test
+    void testModifyCourseDetails_CourseDoesNotExist() throws Exception {
+        Long courseId = 1L;
+        CourseDTO courseDTO = new CourseDTO();
+        courseDTO.setTitle("New Course Title");
 
+        when(courseService.findCourseById(courseId)).thenReturn(null);
 
+        mockMvc.perform(put("/api/admin/updateCourseDetails/{courseId}", courseId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJsonString(courseDTO)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Course doesn't exist with the particular courseID"));
+    }
 
+    @Test
+    void testModifyCourseDetails_DuplicateCourseTitle() throws Exception {
+        Long courseId = 1L;
+        Course existingCourse = new Course();
+        existingCourse.setId(courseId);
+        existingCourse.setTitle("Existing Title");
 
+        CourseDTO courseDTO = new CourseDTO();
+        courseDTO.setTitle("Duplicate Title");
 
+        when(courseService.findCourseById(courseId)).thenReturn(existingCourse);
+        when(courseService.findByTitle("Duplicate Title")).thenReturn(new Course());
 
+        mockMvc.perform(put("/api/admin/updateCourseDetails/{courseId}", courseId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJsonString(courseDTO)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Course title already exists."));
+    }
 
+    @Test
+    void testModifyCourseDetails_InstructorDoesNotExist() throws Exception {
+        Long courseId = 1L;
+        Course existingCourse = new Course();
+        existingCourse.setId(courseId);
+        existingCourse.setTitle("Existing Title");
+        existingCourse.setDescription("Existin desc");
 
+        CourseDTO courseDTO = new CourseDTO();
+        courseDTO.setTitle("Updated Title");
+        courseDTO.setInstructorId(2L);
+        courseDTO.setDescription("new desc");
+        courseDTO.setName("updated name");
 
+        when(courseService.findCourseById(courseId)).thenReturn(existingCourse);
+        when(userService.findUserById(2L)).thenReturn(null);
+
+        mockMvc.perform(put("/api/admin/updateCourseDetails/{courseId}", courseId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJsonString(courseDTO)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Instructor does not exists."));
+    }
+
+    @Test
+    void testModifyCourseDetails_UpdateWithSameInstructor() throws Exception {
+        Long courseId = 1L;
+        Course existingCourse = new Course();
+        existingCourse.setId(courseId);
+        existingCourse.setTitle("Existing Title");
+        Users existingInstructor = new Users();
+        existingInstructor.setId(2L);
+        existingInstructor.setStatus(Users.Status.ACTIVE);
+        existingCourse.setInstructor(existingInstructor);
+
+        CourseDTO courseDTO = new CourseDTO();
+        courseDTO.setTitle("Updated Title");
+        courseDTO.setInstructorId(2L);
+        courseDTO.setDescription("new desc");
+        courseDTO.setName("updated name");
+
+        when(courseService.findCourseById(courseId)).thenReturn(existingCourse);
+        when(courseService.findByTitle("Updated Title")).thenReturn(null);
+        when(userService.findUserById(2L)).thenReturn(existingInstructor);
+
+        mockMvc.perform(put("/api/admin/updateCourseDetails/{courseId}", courseId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJsonString(courseDTO)))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Course Details updated successfully"));
+
+        verify(courseService, times(1)).saveCourse(any(Course.class));
+    }
+
+    @Test
+    void testModifyCourseDetails_UpdateWithNewInstructor() throws Exception {
+        Long courseId = 1L;
+        Course existingCourse = new Course();
+        existingCourse.setId(courseId);
+        existingCourse.setTitle("Existing Title");
+        Users existingInstructor = new Users();
+        existingInstructor.setId(2L);
+        existingInstructor.setStatus(Users.Status.ACTIVE);
+        existingCourse.setInstructor(existingInstructor);
+
+        Users newInstructor = new Users();
+        newInstructor.setId(3L);
+        newInstructor.setStatus(Users.Status.ACTIVE);
+
+        CourseDTO courseDTO = new CourseDTO();
+        courseDTO.setTitle("Updated Title");
+        courseDTO.setInstructorId(3L);
+        courseDTO.setDescription("new desc");
+        courseDTO.setName("updated name");
+
+        when(courseService.findCourseById(courseId)).thenReturn(existingCourse);
+        when(courseService.findByTitle("Updated Title")).thenReturn(null);
+        when(userService.findUserById(3L)).thenReturn(newInstructor);
+
+        mockMvc.perform(put("/api/admin/updateCourseDetails/{courseId}", courseId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJsonString(courseDTO)))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Course Details updated successfully"));
+
+        verify(assignmentService, times(1)).deleteAssignmentsByCourseId(courseId);
+        verify(announcementService, times(1)).deleteAnnouncementsByCourseId(courseId);
+        verify(courseMaterialService, times(1)).deleteCourseMaterialsByCourseId(courseId);
+        verify(courseService, times(1)).saveCourse(any(Course.class));
+    }
+
+    private static String asJsonString(final Object obj) {
+        try {
+            return new ObjectMapper().writeValueAsString(obj);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

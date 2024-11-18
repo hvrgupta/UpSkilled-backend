@@ -15,5 +15,7 @@ public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
 
     @Query("from Assignment where course.id =:courseId order by deadline asc")
     List<Assignment> findAssignmentsSortedByDeadline(@Param("courseId") long courseId );
+
+    void deleteAllByCourseId(Long courseId);
 }
 

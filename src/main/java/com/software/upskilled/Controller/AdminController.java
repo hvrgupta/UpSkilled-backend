@@ -1,13 +1,13 @@
 package com.software.upskilled.Controller;
 
+import com.software.upskilled.Entity.Assignment;
 import com.software.upskilled.Entity.Course;
+import com.software.upskilled.Entity.CourseMaterial;
 import com.software.upskilled.Entity.Users;
 import com.software.upskilled.dto.CourseDTO;
 import com.software.upskilled.dto.CourseInfoDTO;
 import com.software.upskilled.dto.CreateUserDTO;
-import com.software.upskilled.service.FileService;
-import com.software.upskilled.service.UserService;
-import com.software.upskilled.service.CourseService;
+import com.software.upskilled.service.*;
 import com.software.upskilled.utils.AdminRoleAuth;
 import com.software.upskilled.utils.ErrorResponseMessageUtil;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +35,15 @@ public class AdminController {
 
     @Autowired
     private FileService fileService;
+
+    @Autowired
+    private AssignmentService assignmentService;
+
+    @Autowired
+    private AnnouncementService announcementService;
+
+    @Autowired
+    private CourseMaterialService courseMaterialService;
 
     @Autowired
     private AdminRoleAuth adminRoleAuth;
@@ -157,14 +166,13 @@ public class AdminController {
     public ResponseEntity<?> modifyCourseDetails(@RequestBody CourseDTO courseDTO, @PathVariable Long courseId, @AuthenticationPrincipal Users user) {
 
         Course course = courseService.findCourseById(courseId);
+
         if (course == null) {
             return errorResponseMessageUtil.createErrorResponseMessages( HttpStatus.BAD_REQUEST.value(), "Course doesn't exist with the particular courseID");
         }
 
-        //Check if the user is actually ADMIN, if not then send error message
-        if( !adminRoleAuth.checkUserForAdminRole( user ) )
-        {
-            return errorResponseMessageUtil.createErrorResponseMessages(HttpStatus.FORBIDDEN.value(), "The user account doesn't have the admin privileges for this operation");
+        if(courseService.findByTitle(courseDTO.getTitle()) != null && !courseDTO.getTitle().equalsIgnoreCase(course.getTitle())) {
+            return ResponseEntity.badRequest().body("Course title already exists.");
         }
 
         //Check for the values from the courseDTO
@@ -177,18 +185,40 @@ public class AdminController {
         if( !courseDTO.getName().isBlank() )
             //Get the new Name from the DTO Object and set it to existing Name
             course.setName( courseDTO.getName() );
-        if( courseDTO.getInstructorId() != 0 ) {
-            //Fetch the details of the new Instructor User
-            Users instructor = userService.findUserById(courseDTO.getInstructorId());
-            //If instructor ID is not null, then perform the change operation
-            if (instructor != null) {
+
+        //Fetch the details of the new Instructor User
+        Users instructor = userService.findUserById(courseDTO.getInstructorId());
+
+        //If instructor ID is not null, then perform the change operation
+        if (instructor != null && instructor.getStatus().equals(Users.Status.ACTIVE)) {
                 //Save the instructor object to the exiting course details
+            if(instructor.getId().equals(course.getInstructor().getId())) {
                 course.setInstructor(instructor);
+                courseService.saveCourse(course);
+            }else {
+//              Remove all the items related to previous instructor
+
+                assignmentService.deleteAssignmentsByCourseId(course.getId());
+
+                announcementService.deleteAnnouncementsByCourseId(course.getId());
+
+                List<CourseMaterial> courseMaterials = courseMaterialService.getAllCourseMaterialsByCourseId(course.getId());
+
+                for(CourseMaterial courseMaterial: courseMaterials) {
+                    fileService.deleteCourseMaterial(courseMaterial.getCourseMaterialUrl());
+                }
+
+                courseMaterialService.deleteCourseMaterialsByCourseId(course.getId());
+
+                course.setInstructor(instructor);
+                courseService.saveCourse(course);
+
             }
+
+        }else {
+            return errorResponseMessageUtil.createErrorResponseMessages( HttpStatus.BAD_REQUEST.value(), "Instructor does not exists.");
         }
 
-        //Perform the update operation
-        courseService.saveCourse(course);
 
         return ResponseEntity.ok("Course Details updated successfully");
     }
@@ -258,9 +288,11 @@ public class AdminController {
 
         // Check if a syllabus is uploaded
         String syllabusUrl = course.getSyllabusUrl();
+
         if (syllabusUrl == null || syllabusUrl.isEmpty()) {
             return ResponseEntity.badRequest().body("No syllabus uploaded for this course.");
         }
+
         final byte[] data = fileService.viewSyllabus(courseId);
         final ByteArrayResource resource = new ByteArrayResource(data);
         return ResponseEntity
