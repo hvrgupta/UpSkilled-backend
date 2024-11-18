@@ -26,7 +26,7 @@ public class CourseMaterial
     @Column(nullable = false)
     private Long id;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false)
     private String title;
 
     @Column(nullable = false, length = 5000)
