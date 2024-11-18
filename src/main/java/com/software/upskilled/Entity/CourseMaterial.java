@@ -16,6 +16,11 @@ import java.util.Date;
 @Table(name = "coursematerial")
 public class CourseMaterial
 {
+    /**
+     * Entity class representing a CourseMaterial.
+     * This class maps to a table in the database where course materials are stored,
+     * associated with both the course and the instructor.
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(nullable = false)

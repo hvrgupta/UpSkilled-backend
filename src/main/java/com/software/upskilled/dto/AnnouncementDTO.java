@@ -10,7 +10,10 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AnnouncementDTO {
-
+    /**
+     * Data Transfer Object (DTO) for carrying announcement data.
+     * Used for transferring announcement details such as title, content, and id.
+     */
     @Getter
     private Long id;
 

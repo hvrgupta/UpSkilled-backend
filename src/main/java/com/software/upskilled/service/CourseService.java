@@ -10,6 +10,10 @@ import java.util.List;
 
 import java.util.Set;
 
+/**
+ * Service for managing courses. Provides methods to save, retrieve, and delete courses,
+ * as well as finding courses by title or instructor ID.
+ */
 @Service
 public class CourseService {
     @Autowired

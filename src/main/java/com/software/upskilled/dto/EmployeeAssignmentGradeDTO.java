@@ -11,6 +11,10 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class EmployeeAssignmentGradeDTO {
+    /**
+     * Data Transfer Object (DTO) for employee assignment grading.
+     * This DTO is used to transfer the grading information of an assignment submission for an employee.
+     */
     private Long assignmentId;
     private String assignmentName;
     private Long submissionId;

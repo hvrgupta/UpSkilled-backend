@@ -13,6 +13,12 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/**
+ * Service layer for handling user-related operations, including user creation, updating, and retrieval.
+ * Implements the `UserDetailsService` interface for Spring Security to load user details by username (email).
+ * Provides methods for managing users by their roles and statuses, such as finding instructors, active/inactive instructors, and performing CRUD operations.
+ * Passwords are securely encoded before being saved or updated.
+ */
 @Service
 public class UserService implements UserDetailsService {
 
@@ -25,7 +31,6 @@ public class UserService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-
         UserDetails userDetails = userRepository.findByEmail(username);
         if(userDetails == null) {
             throw new UsernameNotFoundException("User does not exists");
@@ -72,5 +77,4 @@ public class UserService implements UserDetailsService {
     }
 
     public void deleteUser(Users user){ userRepository.delete(user); }
-
 }

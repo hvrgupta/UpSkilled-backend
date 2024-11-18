@@ -9,12 +9,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Service layer for handling submission operations. Provides methods to save, modify, retrieve, and sort submissions based on submission time.
+ * Includes functionality for managing individual submission details and retrieving submissions for assignments.
+ */
+
 @Service
 public class SubmissionService
 {
     @Autowired
     SubmissionRepository submissionRepository;
-
 
     public Submission saveSubmissionDetails( Submission submission )
     {
@@ -23,19 +27,15 @@ public class SubmissionService
 
     @Transactional
     @Modifying
-    public Submission modifySubmissionDetails( Submission submission )
-    {
+    public Submission modifySubmissionDetails( Submission submission ) {
         return submissionRepository.save( submission );
     }
 
-    public Submission getSubmissionByID( long submissionID )
-    {
+    public Submission getSubmissionByID( long submissionID ) {
         return submissionRepository.getSubmissionById( submissionID );
     }
 
-    public List<Submission> getSubmissionsSortedBySubmittedTime( Long assignmentId )
-    {
+    public List<Submission> getSubmissionsSortedBySubmittedTime( Long assignmentId ) {
         return submissionRepository.getSubmissionsSortedBySubmissionTime( assignmentId );
     }
-
 }

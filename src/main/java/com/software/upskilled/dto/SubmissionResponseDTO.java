@@ -9,6 +9,11 @@ import java.util.Date;
 @Data
 public class SubmissionResponseDTO
 {
+    /**
+     * Data Transfer Object (DTO) for representing the response of a submission.
+     * This DTO is used to send back the details of a submission, including its status,
+     * associated assignment, grade, and user details.
+     */
     private long submissionId;
     private String submissionUrl;
     private Date submissionAt;

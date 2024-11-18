@@ -15,7 +15,12 @@ import java.util.Set;
 @AllArgsConstructor
 @Builder
 public class Assignment {
-
+    /**
+     * Entity class representing an Assignment.
+     * This class maps to a table in the database where assignments related
+     * to courses are stored. Each assignment is associated with a course
+     * and has a creator (user).
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

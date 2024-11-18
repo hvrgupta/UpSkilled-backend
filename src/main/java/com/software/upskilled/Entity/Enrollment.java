@@ -13,6 +13,11 @@ import java.util.Date;
 @AllArgsConstructor
 @Builder
 public class Enrollment {
+    /**
+     * Entity class representing an Enrollment.
+     * This class maps to a table in the database where the association between
+     * a course and an employee (user) is stored, including the enrollment date.
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

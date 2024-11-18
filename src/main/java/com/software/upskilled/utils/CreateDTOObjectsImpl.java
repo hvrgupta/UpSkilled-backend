@@ -8,16 +8,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Implementation class for creating Data Transfer Objects (DTOs).
+ * This class is responsible for instantiating and populating DTO objects
+ * based on business logic and data from various sources.
+ */
 @Component
 public class CreateDTOObjectsImpl implements CreateDTOObjects
 {
-
     @Override
-    public CreateUserDTO createUserDTO(Users userObject)
-    {
+    public CreateUserDTO createUserDTO(Users userObject) {
         //Creating the User DTO Object
         CreateUserDTO createUserDTO = new CreateUserDTO();
-
         //Setting the various properties of the DTO Object
         createUserDTO.setFirstName( userObject.getFirstName() );
         createUserDTO.setLastName( userObject.getLastName() );
@@ -25,13 +27,11 @@ public class CreateDTOObjectsImpl implements CreateDTOObjects
         createUserDTO.setDesignation( userObject.getDesignation() );
         createUserDTO.setId( userObject.getId() );
         createUserDTO.setRole( userObject.getRole() );
-
         return createUserDTO;
     }
 
     @Override
     public SubmissionResponseDTO createSubmissionDTO(Submission submission, Assignment assignment, Users userDetails) {
-
         //Create the Submission Response DTO Object
         SubmissionResponseDTO submissionResponseDTO = new SubmissionResponseDTO();
 
@@ -67,7 +67,6 @@ public class CreateDTOObjectsImpl implements CreateDTOObjects
 
         //Return the submission dto object
         return submissionResponseDTO;
-
     }
 
     @Override
@@ -119,7 +118,6 @@ public class CreateDTOObjectsImpl implements CreateDTOObjects
 
     @Override
     public CourseMessagesResponseDTO createCourseMessagesResponseDTO(Map<String, String> userDetails, List<Message> messages) {
-
         //Create the CourseMessageResponseDTO object
         CourseMessagesResponseDTO courseMessagesResponseDTO = new CourseMessagesResponseDTO();
 
@@ -134,7 +132,6 @@ public class CreateDTOObjectsImpl implements CreateDTOObjects
 
         //Return the created DTO object
         return courseMessagesResponseDTO;
-
 
     }
 }

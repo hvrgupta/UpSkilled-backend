@@ -17,7 +17,29 @@ import java.util.*;
 @AllArgsConstructor
 @Builder
 public class Users implements UserDetails {
-
+    /**
+     * The Users class represents a user entity in the system.
+     * It implements UserDetails to integrate with Spring Security for authentication and authorization.
+     * Fields:
+     * - id: Unique identifier for each user.
+     * - email: The user's email, which is also the username.
+     * - password: The user's password, stored securely.
+     * - createdAt: The timestamp when the user was created.
+     * - updatedAt: The timestamp of the last update to the user.
+     * - role: The user's role (e.g., admin, instructor, employee).
+     * - status: The current status of the user (ACTIVE, INACTIVE, or REJECTED).
+     * - firstName: The user's first name.
+     * - lastName: The user's last name.
+     * - designation: The user's job title or role (optional).
+     *
+     * Relationships:
+     * - coursesTaught: A set of courses taught by the user (if they are an instructor).
+     * - enrollments: A set of courses the user is enrolled in (if they are an employee).
+     * - submissions: A set of assignments submitted by the user (if they are an employee).
+     * - gradesGiven: A set of grades given by the user (if they are an instructor).
+     * - messagesSent: A set of messages sent by the user.
+     * - messagesReceived: A set of messages received by the user.
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(nullable = false)

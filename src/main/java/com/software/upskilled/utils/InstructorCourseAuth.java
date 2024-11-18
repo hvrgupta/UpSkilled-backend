@@ -9,6 +9,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
+/**
+ * Component responsible for authenticating and authorizing instructors for course access.
+ * This class validates whether an instructor is allowed to access and manage a specific course.
+ */
 @Component
 public class InstructorCourseAuth {
 

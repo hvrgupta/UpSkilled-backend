@@ -12,6 +12,10 @@ import java.util.Date;
 @AllArgsConstructor
 @Builder
 public class Gradebook {
+    /**
+     * Entity class representing a Gradebook.
+     * This class tracks the grades and feedback given by the instructor for a specific submission.
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

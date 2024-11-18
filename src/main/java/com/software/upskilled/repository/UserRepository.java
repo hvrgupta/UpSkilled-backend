@@ -6,6 +6,10 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+/**
+ * Repository for managing User entities. Provides methods to find users by email,
+ * role, and status, as well as to delete users from the repository.
+ */
 @Repository
 public interface UserRepository extends JpaRepository<Users, Long> {
     Users findByEmail(String email);

@@ -29,6 +29,10 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 
+/**
+ * Implementation of the FileService interface for managing file uploads, updates, deletions, and retrievals
+ * related to course materials, syllabus, and assignment submissions.
+ */
 @Service
 @Slf4j
 public class FileServiceImpl implements FileService {

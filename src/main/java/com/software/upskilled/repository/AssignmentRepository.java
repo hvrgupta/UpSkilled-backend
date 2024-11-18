@@ -9,6 +9,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Repository for managing Assignment entities. Provides methods to
+ * retrieve assignments by course, sort assignments by deadline,
+ * and delete assignments by course.
+ */
 @Repository
 public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
     List<Assignment> findByCourseId(Long courseId);
