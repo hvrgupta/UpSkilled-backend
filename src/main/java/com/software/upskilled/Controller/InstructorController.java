@@ -1,7 +1,5 @@
 package com.software.upskilled.Controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.JsonObject;
 import com.software.upskilled.Entity.*;
 import com.software.upskilled.dto.*;
 import com.software.upskilled.service.*;
@@ -9,17 +7,13 @@ import com.software.upskilled.utils.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -880,7 +874,9 @@ public class InstructorController {
             //Try to update the courseMaterial
             fileService.updateCourseMaterial( file, instructorData, courseData, courseMaterialDTO, existingCourseMaterial );
             //Check if the courseMaterial has been updated
-            CourseMaterial updatedCourseMaterial = courseMaterialService.getCourseMaterialByTitle( courseMaterialDTO.getMaterialTitle() );
+//            CourseMaterial updatedCourseMaterial = courseMaterialService.getCourseMaterialByTitle( courseMaterialDTO.getMaterialTitle() );
+            CourseMaterial updatedCourseMaterial = courseMaterialService.getCourseMaterialById ( existingCourseMaterial.getId());
+
             if( (updatedCourseMaterial.getCourseMaterialUrl().equals( existingCourseMaterial.getCourseMaterialUrl())) ||
                     (updatedCourseMaterial.getTitle().equals( existingCourseMaterial.getTitle() ))
             || (updatedCourseMaterial.getDescription().equals( existingCourseMaterial.getDescription() ) ))

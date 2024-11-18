@@ -39,10 +39,6 @@ public class CourseMaterialService
         courseMaterialRepository.deleteCourseMaterialByCourseId( courseMaterialId );
     }
 
-    public CourseMaterial getCourseMaterialByTitle( String courseMaterialTitle ){
-        return courseMaterialRepository.findByTitle(courseMaterialTitle);
-    }
-
     public CourseMaterial getCourseMaterialById(Long courseMaterialId){
         Optional<CourseMaterial> courseMaterial = courseMaterialRepository.findById(courseMaterialId);
         //Return the courseMaterial if the Course-Material is present else return null

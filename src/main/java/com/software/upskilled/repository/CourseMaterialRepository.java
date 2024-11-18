@@ -18,8 +18,6 @@ import java.util.List;
 @Repository
 public interface CourseMaterialRepository extends JpaRepository<CourseMaterial, Long>
 {
-    CourseMaterial findByTitle( String courseTitle );
-
     @Transactional
     @Modifying(flushAutomatically = true)
     @Query("delete from CourseMaterial where id = :courseId")
