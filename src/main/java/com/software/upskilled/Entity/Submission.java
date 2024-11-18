@@ -12,6 +12,19 @@ import java.util.Date;
 @AllArgsConstructor
 @Builder
 public class Submission {
+    /**
+     * The Submission class represents an assignment submission made by an employee.
+     * It contains the submission details such as the URL of the uploaded assignment,
+     * submission timestamp, its status, and associations with the assignment and employee.
+     *
+     * Fields:
+     * - submissionUrl: URL or file path where the employee's assignment is stored.
+     * - submittedAt: The timestamp when the assignment was submitted.
+     * - status: The current status of the submission (e.g., Submitted, Graded, Pending Review).
+     * - assignment: The assignment that the submission is related to.
+     * - employee: The employee who made the submission.
+     * - grade: The gradebook entry associated with the submission (if applicable).
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

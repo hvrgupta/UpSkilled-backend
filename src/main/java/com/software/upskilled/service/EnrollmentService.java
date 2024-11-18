@@ -15,6 +15,10 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Service for handling employee enrollments in courses. Includes methods for enrolling and unenrolling employees,
+ * checking enrollment status, and managing associated submissions and files.
+ */
 @Service
 public class EnrollmentService {
 

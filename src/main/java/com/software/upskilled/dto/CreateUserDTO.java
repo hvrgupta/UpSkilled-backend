@@ -11,6 +11,10 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateUserDTO {
+    /**
+     * Data Transfer Object (DTO) for creating a new user.
+     * This DTO is used to transfer user data during the user registration process.
+     */
     private Long id;
     private String email;
     private String password;

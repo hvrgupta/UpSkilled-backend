@@ -9,6 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Service for handling operations related to announcements. Provides methods to save,
+ * retrieve, delete announcements, and fetch announcements by course, sorted by update time.
+ */
 @Service
 public class AnnouncementService {
     @Autowired

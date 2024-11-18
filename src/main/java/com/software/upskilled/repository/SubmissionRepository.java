@@ -8,6 +8,11 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+/**
+ * Repository for managing Submission entities. Provides methods to retrieve
+ * submissions by assignment, employee, and course, as well as to sort submissions
+ * by submission time.
+ */
 @Repository
 public interface SubmissionRepository extends JpaRepository<Submission, Long>
 {

@@ -8,6 +8,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
+/**
+ * Component responsible for authenticating and authorizing employees for course access.
+ * This class validates whether an employee is allowed to access a specific course.
+ */
 @Component
 public class EmployeeCourseAuth {
 

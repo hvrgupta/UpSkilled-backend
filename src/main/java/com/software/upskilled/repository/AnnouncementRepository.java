@@ -8,6 +8,10 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Repository for managing Announcement entities. Provides methods to
+ * retrieve, delete, and sort announcements by course.
+ */
 public interface AnnouncementRepository extends JpaRepository<Announcement, Long> {
     Set<Announcement> findByCourseId(Long courseId);
 

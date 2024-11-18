@@ -6,16 +6,13 @@ import com.software.upskilled.dto.FileDeletionResponse;
 import com.software.upskilled.dto.FileUploadResponse;
 import org.springframework.web.multipart.MultipartFile;
 
+/**
+ * Service for handling file operations related to course materials, syllabus, and assignment submissions.
+ * Includes methods for uploading, updating, viewing, and deleting files, as well as managing responses related to file uploads and deletions.
+ */
 public interface FileService {
     FileUploadResponse uploadSyllabus(MultipartFile multipartFile, Long courseId);
 
-    /**
-     *
-     * @param multipartFile
-     * @param instructorName
-     * @param courseTitle
-     * @return
-     */
     FileUploadResponse uploadCourseMaterial(MultipartFile multipartFile, String instructorName, String courseTitle, CourseMaterialDTO courseMaterialDTO);
 
     FileUploadResponse updateCourseMaterial(MultipartFile multipartFile, String instructorName, String courseTitle, CourseMaterialDTO courseMaterialDTO, CourseMaterial existingCourseMaterial);

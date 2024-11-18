@@ -12,6 +12,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Service class for JWT (JSON Web Token) operations.
+ * This class handles token generation, validation, and claim extraction.
+ */
 @Service
 public class JWTUtil {
     private String secret;

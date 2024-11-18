@@ -41,6 +41,10 @@ public class SecurityConfig {
         this.myUsersDetailsService = myUsersDetailsService;
     }
 
+    /**
+     * Configures the security filter chain, including CORS, authorization rules,
+     * session management, and JWT filter integration.
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity
@@ -59,6 +63,9 @@ public class SecurityConfig {
         return httpSecurity.build();
     }
 
+    /**
+     * Provides CORS configuration to allow cross-origin requests for all endpoints.
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
@@ -72,11 +79,17 @@ public class SecurityConfig {
         return source;
     }
 
+    /**
+     * Creates an AuthenticationManager bean for managing authentication.
+     */
     @Bean
     public AuthenticationManager authManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
 
+    /**
+     * Configures a DAO-based authentication provider with a custom user details service and password encoder.
+     */
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider auth = new DaoAuthenticationProvider();

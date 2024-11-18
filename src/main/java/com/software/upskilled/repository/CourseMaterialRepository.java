@@ -10,6 +10,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Repository for managing CourseMaterial entities. Provides methods to
+ * retrieve course materials by title and course ID, delete course materials
+ * by course ID, and delete a specific course material by its ID.
+ */
 @Repository
 public interface CourseMaterialRepository extends JpaRepository<CourseMaterial, Long>
 {

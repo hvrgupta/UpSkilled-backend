@@ -13,6 +13,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Repository for managing Message entities. Provides methods for retrieving
+ * sent and received messages for employees, as well as updating message read statuses.
+ * It also includes queries to fetch unique sender and recipient lists based on course context.
+ */
 @Repository
 public interface MessageRepository extends JpaRepository<Message, Long>
 {

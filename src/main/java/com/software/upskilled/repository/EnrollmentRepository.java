@@ -7,6 +7,10 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+/**
+ * Repository for managing Enrollment entities. Provides method to delete
+ * an enrollment by employee ID and course ID.
+ */
 @Repository
 public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
     @Modifying

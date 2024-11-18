@@ -9,6 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Service for managing assignments. Provides methods to create, update, retrieve,
+ * delete assignments, and fetch assignments by course or deadline.
+ */
 @Service
 public class AssignmentService {
 

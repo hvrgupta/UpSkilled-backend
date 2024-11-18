@@ -10,6 +10,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Service for managing course materials. Provides methods to save, update, delete,
+ * retrieve materials by title, ID, and course, and delete all materials by course ID.
+ */
 @Service
 public class CourseMaterialService
 {

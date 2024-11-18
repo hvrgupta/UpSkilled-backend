@@ -11,13 +11,16 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.Optional;
 
+/**
+ * Repository for managing Gradebook entities. Provides methods for deleting
+ * a gradebook entry by its ID and retrieving a gradebook by ID.
+ */
 public interface GradeBookRepository extends JpaRepository<Gradebook,Long>
 {
     @Override
     @Modifying(flushAutomatically = true)
     @Query("delete from Gradebook g where g.id=:gradeBookID")
     void deleteById(@Param("gradeBookID") Long gradeBookID);
-
     @Override
     Optional<Gradebook> findById(Long gradeBookID);
 }

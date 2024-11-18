@@ -13,9 +13,12 @@ import java.util.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-
-
 public class Announcement {
+    /**
+     * Entity class representing an Announcement.
+     * This class maps to a table in the database where announcements related
+     * to courses are stored. Each announcement is associated with a specific course.
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

@@ -51,9 +51,16 @@ public class AdminController {
     @Autowired
     private ErrorResponseMessageUtil errorResponseMessageUtil;
 
+    /**
+     * Retrieves a combined list of active and inactive instructors.
+     * Converts each instructor entity to a CreateUserDTO and masks the password field.
+     * Returns the list of instructors as a response.
+     *
+     * @return ResponseEntity containing the list of instructors.
+     */
     @GetMapping("/listInstructors")
     public ResponseEntity<List<CreateUserDTO>> getInstructorsList() {
-
+        // Fetch and map inactive instructors to DTOs
         List<CreateUserDTO> instructorList = new ArrayList<>(userService.getInactiveInstructors().stream().map((instructor) -> {
             CreateUserDTO userDTO = new CreateUserDTO();
             userDTO.setEmail(instructor.getEmail());
@@ -66,6 +73,7 @@ public class AdminController {
             userDTO.setStatus(instructor.getStatus());
             return userDTO;
         }).toList());
+        // Fetch and map active instructors to DTOs
         List<CreateUserDTO> activeInstructorList = userService.getActiveInstructors().stream().map((instructor) -> {
             CreateUserDTO userDTO = new CreateUserDTO();
             userDTO.setEmail(instructor.getEmail());
@@ -78,13 +86,21 @@ public class AdminController {
             userDTO.setStatus(instructor.getStatus());
             return userDTO;
         }).toList();
+        // If no inactive instructors, return only active instructors
         if(instructorList.isEmpty()) {
             return ResponseEntity.ok(activeInstructorList);
         }
+        // Combine inactive and active instructor lists
         instructorList.addAll(activeInstructorList);
         return ResponseEntity.ok(instructorList);
     }
 
+    /**
+     * Retrieves a list of active instructors.
+     * Maps each instructor entity to a CreateUserDTO and masks the password field.
+     *
+     * @return ResponseEntity containing the list of active instructors.
+     */
     @GetMapping("/listActiveInstructors")
     public ResponseEntity<List<CreateUserDTO>> getActiveInstructorsList() {
         List<CreateUserDTO> instructorList = new ArrayList<>(userService.getActiveInstructors().stream().map((instructor) -> {
@@ -103,6 +119,12 @@ public class AdminController {
         return ResponseEntity.ok(instructorList);
     }
 
+    /**
+     * Approves an instructor by changing their status to ACTIVE.
+     *
+     * @param instructorId The ID of the instructor to approve.
+     * @return ResponseEntity with a success or error message.
+     */
     @PostMapping("/approve/{instructorId}")
     public ResponseEntity<String> approveInstructor(@PathVariable Long instructorId) {
           Users instructor = userService.findUserById(instructorId);
@@ -114,6 +136,12 @@ public class AdminController {
         return ResponseEntity.ok("User Approved!");
     }
 
+    /**
+     * Rejects an instructor by changing their status to REJECTED.
+     *
+     * @param instructorId The ID of the instructor to reject.
+     * @return ResponseEntity with a success or error message.
+     */
     @PostMapping("/reject/{instructorId}")
     public ResponseEntity<String> rejectInstructor(@PathVariable Long instructorId) {
         Users instructor = userService.findUserById(instructorId);
@@ -124,17 +152,14 @@ public class AdminController {
         userService.saveUser(instructor);
         return ResponseEntity.ok("User Rejected!");
     }
-/*
-    @DeleteMapping("/delete/{instructorId}")
-    public ResponseEntity<String> deleteInstructor(@PathVariable Long instructorId) {
-        Users instructor = userService.findUserById(instructorId);
-        if (instructor == null || !instructor.getRole().equals("INSTRUCTOR")) {
-            return ResponseEntity.badRequest().body("Invalid instructor ID");
-        }
-        userService.deleteUser(instructor);
-        return ResponseEntity.ok("User Removed!");
-    }
-*/
+
+    /**
+     * Creates a new course for an active instructor.
+     * Validates the instructor's role, status, and course details before creation.
+     *
+     * @param courseDTO The course details provided in the request body.
+     * @return ResponseEntity with a success or error message.
+     */
     @PostMapping("/createCourse")
     public ResponseEntity<String> createNewCourse(@RequestBody CourseDTO courseDTO) {
         Users instructor = userService.findUserById(courseDTO.getInstructorId());
@@ -162,6 +187,16 @@ public class AdminController {
         return ResponseEntity.ok("Course created successfully for instructor: " + instructor.getEmail());
     }
 
+    /**
+     * Updates the details of an existing course.
+     * Validates the course's existence, ensures unique titles, updates fields from the DTO,
+     * and handles instructor reassignment with appropriate cleanup of associated resources.
+     *
+     * @param courseDTO The updated course details provided in the request body.
+     * @param courseId The ID of the course to update.
+     * @param user The authenticated user performing the update.
+     * @return ResponseEntity with a success message or error details.
+     */
     @PutMapping("/updateCourseDetails/{courseId}")
     public ResponseEntity<?> modifyCourseDetails(@RequestBody CourseDTO courseDTO, @PathVariable Long courseId, @AuthenticationPrincipal Users user) {
 
@@ -212,17 +247,20 @@ public class AdminController {
 
                 course.setInstructor(instructor);
                 courseService.saveCourse(course);
-
             }
-
         }else {
             return errorResponseMessageUtil.createErrorResponseMessages( HttpStatus.BAD_REQUEST.value(), "Instructor does not exists.");
         }
-
-
         return ResponseEntity.ok("Course Details updated successfully");
     }
 
+    /**
+     * Inactivates a course by its ID.
+     * Marks the course status as INACTIVE if it exists.
+     *
+     * @param courseId The ID of the course to inactivate.
+     * @return ResponseEntity with success or error message.
+     */
     @PostMapping("/course/inactivate/{courseId}")
     public ResponseEntity<String> inactivateCourse(@PathVariable Long courseId) {
         Course course = courseService.findCourseById(courseId);
@@ -236,6 +274,12 @@ public class AdminController {
         return ResponseEntity.ok("Course Inactivated!");
     }
 
+    /**
+     * Retrieves a list of all active courses.
+     * Maps each course to a DTO with course and instructor details.
+     *
+     * @return ResponseEntity containing the list of active courses.
+     */
     @GetMapping("/courses")
     public ResponseEntity<List<CourseInfoDTO>> viewCourses() {
 
@@ -255,6 +299,13 @@ public class AdminController {
         return ResponseEntity.ok(courseList);
     }
 
+    /**
+     * Retrieves detailed information about a specific course.
+     * Returns course details if the course exists; otherwise, an error message.
+     *
+     * @param courseId The ID of the course to retrieve.
+     * @return ResponseEntity containing the course details or an error message.
+     */
     @GetMapping("/course/{courseId}")
     public ResponseEntity<?> getCourseDetails(@PathVariable Long courseId) {
 
@@ -276,6 +327,13 @@ public class AdminController {
         return ResponseEntity.ok(courseInfoDTO);
     }
 
+    /**
+     * Retrieves the syllabus file for a specific course.
+     * Returns the syllabus file if uploaded; otherwise, an error message.
+     *
+     * @param courseId The ID of the course whose syllabus is requested.
+     * @return ResponseEntity containing the syllabus file as a download or an error message.
+     */
     @GetMapping("/{courseId}/syllabus")
     public ResponseEntity<?>  viewSyllabus(@PathVariable Long courseId) {
 

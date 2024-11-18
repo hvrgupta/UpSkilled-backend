@@ -8,14 +8,19 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+/**
+ * Component that provides validation for assignments and submissions.
+ * The `validateSubmissionAgainstAssignment` method checks if a given submission ID exists for a specific assignment ID.
+ * It fetches the assignment details and verifies if the submission ID is associated with that assignment.
+ * Returns true if the submission exists for the assignment, otherwise returns false.
+ */
 @Component
 public class AssignmentPropertyValidator
 {
     @Autowired
     AssignmentService assignmentService;
 
-    public boolean validateSubmissionAgainstAssignment( long assignmentID, long submissionID )
-    {
+    public boolean validateSubmissionAgainstAssignment( long assignmentID, long submissionID ) {
         Assignment assignmentDetails = assignmentService.getAssignmentById( assignmentID );
         //Check if the assignmentDetails is null
         if( assignmentDetails == null )

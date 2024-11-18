@@ -15,6 +15,11 @@ import java.util.Set;
 @AllArgsConstructor
 @Builder
 public class Course {
+    /**
+     * Entity class representing a Course.
+     * This class maps to a table in the database where courses are stored,
+     * each course having a title, description, name, instructor, and various associated materials, enrollments, announcements, assignments, and messages.
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(nullable = false)
@@ -44,6 +49,11 @@ public class Course {
     @Column(nullable = false)
     private Status status;
 
+    /**
+     * The instructor associated with this course.
+     * Each course is taught by a single instructor.
+     * This field represents a many-to-one relationship with the Users entity.
+     */
     @ManyToOne( cascade = {CascadeType.PERSIST, CascadeType.MERGE} )
     @JoinColumn(name = "instructor_id")
     private Users instructor;
@@ -55,18 +65,38 @@ public class Course {
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL)
     private Set<CourseMaterial> courseMaterials;
 
+    /**
+     * A collection of enrollments in this course.
+     * This represents a one-to-many relationship with the Enrollment entity.
+     */
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL)
     private Set<Enrollment> enrollments;
 
+    /**
+     * A collection of announcements related to this course.
+     * This represents a one-to-many relationship with the Announcement entity.
+     */
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL)
     private Set<Announcement> announcements;
 
+    /**
+     * A collection of assignments for this course.
+     * This represents a one-to-many relationship with the Assignment entity.
+     */
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL)
     private Set<Assignment> assignments;
 
+    /**
+     * A collection of messages related to this course.
+     * This represents a one-to-many relationship with the Message entity.
+     */
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL)
     private Set<Message> messages;
 
+    /**
+     * Enum representing the status of the course.
+     * A course can be either ACTIVE or INACTIVE.
+     */
     public enum Status {
         ACTIVE,
         INACTIVE

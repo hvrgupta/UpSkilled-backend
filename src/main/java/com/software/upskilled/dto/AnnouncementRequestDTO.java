@@ -12,7 +12,10 @@ import java.util.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AnnouncementRequestDTO {
-
+    /**
+     * Data Transfer Object (DTO) for carrying announcement request data.
+     * This is used for transferring details when creating or updating an announcement.
+     */
     @Getter
     private Long id;
 

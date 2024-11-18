@@ -6,6 +6,10 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+/**
+ * Repository for managing Course entities. Provides methods to retrieve
+ * courses by title and by instructor ID.
+ */
 @Repository
 public interface CourseRepository extends JpaRepository<Course, Long> {
     Course findByTitle(String title);

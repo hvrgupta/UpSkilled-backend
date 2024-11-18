@@ -33,6 +33,14 @@ public class AuthController {
     @Autowired
     private JWTUtil jwtUtil;
 
+    /**
+     * Retrieves the current authenticated user's details.
+     * If the user is not logged in, throws a UsernameNotFoundException.
+     *
+     * @param user The current authenticated user, provided by Spring Security.
+     * @return A CreateUserDTO containing the user's details (e.g., ID, email, role, etc.).
+     * @throws UsernameNotFoundException If the user is not logged in.
+     */
     @GetMapping("/user")
     public CreateUserDTO getCurrentUser(@AuthenticationPrincipal Users user) {
         if(user == null) throw new UsernameNotFoundException("user not logged in");
@@ -47,11 +55,20 @@ public class AuthController {
         userDTO.setStatus(user.getStatus());
         return userDTO;
     }
+
+    /**
+     * Handles user registration.
+     * Verifies the email format, password length, and mandatory fields.
+     * Assigns the role and status based on the user's role (INSTRUCTOR or EMPLOYEE).
+     *
+     * @param userDTO The user details to register.
+     * @return ResponseEntity with status and message about the registration result.
+     */
     @PostMapping("/signup")
     public ResponseEntity<String> registerUser(@RequestBody CreateUserDTO userDTO) {
         try {
 
-//          Check if email matches the required format
+            // Check if email matches the required format
             if (!userDTO.getEmail().matches("^[A-Za-z0-9._%+-]+@upskilled\\.com$")) {
                 return ResponseEntity.badRequest().body("Invalid email format. Email must be in the format username@upskilled.com");
             }
@@ -91,6 +108,14 @@ public class AuthController {
         }
     }
 
+    /**
+     * Handles user login by authenticating the provided credentials (email and password).
+     * If the authentication is successful, it generates and returns a JWT token.
+     * If authentication fails, it returns an appropriate error message.
+     *
+     * @param authRequest The login credentials (email and password).
+     * @return ResponseEntity with the status and token or error message.
+     */
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody AuthRequest authRequest) throws Exception {
         try {
@@ -118,6 +143,13 @@ public class AuthController {
         }
     }
 
+    /**
+     * Handles user logout by blacklisting the provided JWT token.
+     * The token is extracted from the 'Authorization' header and passed to the blacklist service.
+     *
+     * @param authHeader The 'Authorization' header containing the JWT token.
+     * @return ResponseEntity with a status message confirming logout.
+     */
     @PostMapping("/logout")
     public ResponseEntity<String> logout(@RequestHeader("Authorization") String authHeader) {
         String token = authHeader.replace("Bearer ", "");
@@ -125,6 +157,14 @@ public class AuthController {
         return ResponseEntity.ok("Logged out successfully");
     }
 
+    /**
+     * Handles user profile update, including password and designation.
+     * Ensures that the password meets the minimum length requirement before updating.
+     *
+     * @param userDTO The DTO containing the updated user details (password, designation).
+     * @param authentication The current authenticated user.
+     * @return ResponseEntity with a status message confirming the update or an error message.
+     */
     @PostMapping("/update-profile")
     public ResponseEntity<String> updateUser(@RequestBody CreateUserDTO userDTO, Authentication authentication) {
         try {
