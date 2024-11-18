@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -44,4 +45,12 @@ public class CourseMaterialService
         return courseMaterial.orElse(null);
     }
 
+    public List<CourseMaterial> getAllCourseMaterialsByCourseId(Long courseId) {
+        return courseMaterialRepository.findAllByCourseId(courseId);
+    }
+
+    @Transactional
+    public void deleteCourseMaterialsByCourseId(Long courseId) {
+        courseMaterialRepository.deleteByCourseId(courseId);
+    }
 }

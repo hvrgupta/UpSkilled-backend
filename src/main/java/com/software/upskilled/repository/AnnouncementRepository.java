@@ -13,4 +13,6 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Long
 
     @Query("from Announcement where course.id = :courseId order by updatedAt desc")
     List<Announcement> getAnnouncementsSortedByUpdateTime(@Param("courseId") Long courseId);
+
+    void deleteByCourseId(Long courseId);
 }

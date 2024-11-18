@@ -4,6 +4,7 @@ import com.software.upskilled.Entity.Assignment;
 import com.software.upskilled.repository.AssignmentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -37,5 +38,10 @@ public class AssignmentService {
     //Method that returns all the assignment from today
     public List<Assignment> getAllAssignmentsSortedByDeadLine( long courseId ) {
         return assignmentRepository.findAssignmentsSortedByDeadline( courseId );
+    }
+
+    @Transactional
+    public void deleteAssignmentsByCourseId(Long courseId) {
+        assignmentRepository.deleteAllByCourseId(courseId);
     }
 }

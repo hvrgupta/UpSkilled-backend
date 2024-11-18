@@ -8,6 +8,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Repository
 public interface CourseMaterialRepository extends JpaRepository<CourseMaterial, Long>
 {
@@ -17,4 +19,8 @@ public interface CourseMaterialRepository extends JpaRepository<CourseMaterial, 
     @Modifying(flushAutomatically = true)
     @Query("delete from CourseMaterial where id = :courseId")
     void deleteCourseMaterialByCourseId(@Param("courseId") Long courseId);
+
+    List<CourseMaterial> findAllByCourseId(Long courseId);
+
+    void deleteByCourseId(Long courseId);
 }
