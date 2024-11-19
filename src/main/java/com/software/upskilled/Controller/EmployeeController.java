@@ -58,9 +58,6 @@ public class EmployeeController {
     private EmployeeCourseAuth employeeCourseAuth;
 
     @Autowired
-    private SubmissionRepository submissionRepository;
-
-    @Autowired
     private GradeBookService gradeBookService;
 
     @Autowired
@@ -71,6 +68,8 @@ public class EmployeeController {
 
     @Autowired
     private CoursePropertyValidator coursePropertyValidator;
+    @Autowired
+    private SubmissionService submissionService;
 
     @GetMapping("/courses")
     public ResponseEntity<List<CourseInfoDTO>> viewCourses(Authentication authentication) {
@@ -367,7 +366,7 @@ public class EmployeeController {
             return authResponse;
         }
         //Get the already submitted submission details
-        Submission alreadySubmittedResponse = submissionRepository.getSubmissionById( Long.parseLong(submissionID) );
+        Submission alreadySubmittedResponse = submissionService.getSubmissionByID(Long.parseLong(submissionID));
         //Check if the submitted Response already has a grade linked with it
         Gradebook gradebookDetails = alreadySubmittedResponse.getGrade();
         //System.out.println( gradebookDetails.getGrade() );
