@@ -651,12 +651,19 @@ public class InstructorController {
             Gradebook gradeBookDetails = uploadedSubmissionDetails.getGrade();
             if( gradeBookDetails != null )
                 return ResponseEntity.badRequest().body("Grades already exist for this particular submission");
+            //Check for the valid grade details
+            else if( gradingDetails == null )
+                return errorResponseMessageUtil.createErrorResponseMessages( HttpStatus.BAD_REQUEST.value(), "Please pass the grading Details");
+            else if( gradingDetails.getGrade() == null )
+                return errorResponseMessageUtil.createErrorResponseMessages( HttpStatus.BAD_REQUEST.value(), "The instructor must pass the grade value" );
+            else if( gradingDetails.getGrade() < 0 || gradingDetails.getGrade() > 100 )
+                return errorResponseMessageUtil.createErrorResponseMessages( HttpStatus.BAD_REQUEST.value(), "The grade must be between 0 and 100");
             else{
 
                 //Construct the new GradeBook object so that it can the submission can be saved
                 Gradebook gradeBookSubmission = Gradebook.builder().
                         grade( gradingDetails.getGrade() ).
-                        feedback(gradingDetails.getFeedback() )
+                        feedback(gradingDetails.getFeedback() == null ? "" : gradingDetails.getFeedback() )
                         .submission( uploadedSubmissionDetails )
                         .instructor(instructor).build();
 
@@ -703,9 +710,10 @@ public class InstructorController {
             return authResponse;
         }
 
-        //If grade ius present then, set to new grade ,else don't
-        if( gradeBookRequestDTO.getGrade() != null )
-            gradeBookDetails.setGrade(gradeBookRequestDTO.getGrade() );
+        //If grade ius present and the new grade score is between 0 and 100 then set it to set to new grade ,else don't
+        if( (gradeBookRequestDTO.getGrade() != null) && ( gradeBookRequestDTO.getGrade() >= 0 && gradeBookRequestDTO.getGrade() <= 100)  ) {
+                gradeBookDetails.setGrade(gradeBookRequestDTO.getGrade());
+        }
         //Check if the feedback is present in the DTO object and it is not blank, then only update
         if( (gradeBookRequestDTO.getFeedback() != null) && (!gradeBookRequestDTO.getFeedback().isBlank()))
             gradeBookDetails.setFeedback(gradeBookRequestDTO.getFeedback() );
