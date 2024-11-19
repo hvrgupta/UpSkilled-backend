@@ -10,6 +10,7 @@ This backend service for UpSkilled is developed using Java and the Spring Framew
 
 ## Project Structure
 <p>src/main/java: Contains the main Java source code for the application.</p>
+<p>src/test/java**: Contains unit tests for the application.</p>
 <p>src/main/resources: Contains configuration files such as application.properties</p>
 
 ## Building the Project
