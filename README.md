@@ -13,6 +13,7 @@ This backend service for UpSkilled is developed using Java and the Spring Framew
 <p>src/test/: Contains unit tests for the application.</p>
 <p>src/main/resources: Contains configuration files such as application.properties</p>
 
+## Configuration Setup
 <h3>MySQL Database Configuration</h3>
 <p>Configure the MySQL database by adding the following properties to the <code>application.properties</code> file:</p>
 
