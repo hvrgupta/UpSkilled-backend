@@ -373,12 +373,7 @@ public class InstructorController {
         }
 
         //Create the DTO for the Assignment Details Object
-        AssignmentDetailsDTO assignmentDetailsDTO = new AssignmentDetailsDTO();
-        //Setting the details for the assignment details object
-        assignmentDetailsDTO.setId( assignment.getId() );
-        assignmentDetailsDTO.setTitle(  assignment.getTitle());
-        assignmentDetailsDTO.setDescription( assignment.getDescription());
-        assignmentDetailsDTO.setDeadline(  assignment.getDeadline() );
+        AssignmentDetailsDTO assignmentDetailsDTO = dtoObjectsCreator.createAssignmentDetailsDTO( assignment );
 
         //Create the Assignment Response DTO Object
         AssignmentResponseDTO assignmentResponseDTO = dtoObjectsCreator.createAssignmentResponseDTO( assignmentDetailsDTO, null );
@@ -465,12 +460,7 @@ public class InstructorController {
                 .map(assignment -> {
 
                     //Create the DTO for the Assignment Details Object
-                    AssignmentDetailsDTO assignmentDetailsDTO = new AssignmentDetailsDTO();
-                    //Setting the details for the assignment details object
-                    assignmentDetailsDTO.setId( assignment.getId() );
-                    assignmentDetailsDTO.setTitle(  assignment.getTitle());
-                    assignmentDetailsDTO.setDescription( assignment.getDescription());
-                    assignmentDetailsDTO.setDeadline(  assignment.getDeadline() );
+                    AssignmentDetailsDTO assignmentDetailsDTO = dtoObjectsCreator.createAssignmentDetailsDTO( assignment );
 
                     //Create the assignment response dto by calling the DTO object
                     return dtoObjectsCreator.createAssignmentResponseDTO( assignmentDetailsDTO, null );
@@ -511,13 +501,7 @@ public class InstructorController {
             List<Submission> assignmentSubmissions = submissionService.getSubmissionsSortedBySubmittedTime( assignmentDetails.getId() );
             if( assignmentSubmissions.isEmpty() ) {
 
-                AssignmentDetailsDTO assignmentDetailsDTO = new AssignmentDetailsDTO();
-
-                //Setting the details for the assignment details object
-                assignmentDetailsDTO.setId(assignmentDetails.getId());
-                assignmentDetailsDTO.setTitle(assignmentDetails.getTitle());
-                assignmentDetailsDTO.setDescription(assignmentDetails.getDescription());
-                assignmentDetailsDTO.setDeadline(assignmentDetails.getDeadline());
+                AssignmentDetailsDTO assignmentDetailsDTO = dtoObjectsCreator.createAssignmentDetailsDTO( assignmentDetails );
 
                 //Create the AssignmentResponse DTO by sending the details
                 AssignmentResponseDTO assignmentResponseDTO = dtoObjectsCreator.createAssignmentResponseDTO(assignmentDetailsDTO, null);
@@ -538,12 +522,7 @@ public class InstructorController {
                 });
 
                 //Create the DTO for the Assignment Details Object
-                AssignmentDetailsDTO assignmentDetailsDTO = new AssignmentDetailsDTO();
-                //Setting the details for the assignment details object
-                assignmentDetailsDTO.setId( assignmentDetails.getId() );
-                assignmentDetailsDTO.setTitle(  assignmentDetails.getTitle());
-                assignmentDetailsDTO.setDescription( assignmentDetails.getDescription());
-                assignmentDetailsDTO.setDeadline(  assignmentDetails.getDeadline() );
+                AssignmentDetailsDTO assignmentDetailsDTO = dtoObjectsCreator.createAssignmentDetailsDTO( assignmentDetails );
 
                 //Create the AssignmentResponse DTO by sending the details
                 AssignmentResponseDTO assignmentResponseDTO = dtoObjectsCreator.createAssignmentResponseDTO( assignmentDetailsDTO, submissionResponseDTOList );
