@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
-@AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
 public class CourseServiceTest
 {

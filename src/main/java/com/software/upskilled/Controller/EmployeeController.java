@@ -369,13 +369,7 @@ public class EmployeeController {
         Submission alreadySubmittedResponse = submissionService.getSubmissionByID(Long.parseLong(submissionID));
         //Check if the submitted Response already has a grade linked with it
         Gradebook gradebookDetails = alreadySubmittedResponse.getGrade();
-        //System.out.println( gradebookDetails.getGrade() );
-        //If the assignment already has a grade, then we need to remove the grade assigned with the submission as well
-        /*if( gradebookDetails != null ){
-            gradeBookService.deleteGradeBookSubmission( gradebookDetails.getId() );
-            //Change the status of the submitted response to SUBMITTED
-            alreadySubmittedResponse.setStatus( Submission.Status.SUBMITTED );
-        }*/
+
         if( gradebookDetails != null )
         {
             return errorResponseMessageUtil.createErrorResponseMessages( HttpStatus.BAD_REQUEST.value(), "Employee can not upload assignment past due date");
@@ -418,12 +412,7 @@ public class EmployeeController {
                     AssignmentResponseDTO assignmentResponseDTO = new AssignmentResponseDTO();
 
                     //Create the assignmentDetails DTO Object for the Assignment Response DTO
-                    AssignmentDetailsDTO assignmentDetailsDTO = new AssignmentDetailsDTO();
-                    //Setting the details from the assignment object
-                    assignmentDetailsDTO.setTitle(assignment.getTitle() );
-                    assignmentDetailsDTO.setDescription(assignment.getDescription());
-                    assignmentDetailsDTO.setDeadline(  assignment.getDeadline() );
-                    assignmentDetailsDTO.setId( assignment.getId() );
+                    AssignmentDetailsDTO assignmentDetailsDTO = dtoObjectsCreator.createAssignmentDetailsDTO( assignment );
                     assignmentResponseDTO.setAssignmentDetails( assignmentDetailsDTO );
 
                     //Check if there are any submissions posted by the user for this assignment
@@ -472,12 +461,7 @@ public class EmployeeController {
             SubmissionResponseDTO submissionResponseDTO = dtoObjectsCreator.createSubmissionDTO( assignmentSubmission, particularAssignment, employeeDetails );
 
             //Create the DTO for the Assignment Details Object
-            AssignmentDetailsDTO assignmentDetailsDTO = new AssignmentDetailsDTO();
-            //Setting the details for the assignment details object
-            assignmentDetailsDTO.setId( particularAssignment.getId() );
-            assignmentDetailsDTO.setTitle(particularAssignment.getTitle());
-            assignmentDetailsDTO.setDescription(particularAssignment.getDescription());
-            assignmentDetailsDTO.setDeadline(  particularAssignment.getDeadline() );
+            AssignmentDetailsDTO assignmentDetailsDTO = dtoObjectsCreator.createAssignmentDetailsDTO( particularAssignment );
 
             //Create the Assignment Response DTO object
             AssignmentResponseDTO assignmentResponseDTO = dtoObjectsCreator.createAssignmentResponseDTO( assignmentDetailsDTO,
@@ -488,12 +472,7 @@ public class EmployeeController {
         else {
 
             //Create the DTO for the Assignment Details Object
-            AssignmentDetailsDTO assignmentDetailsDTO = new AssignmentDetailsDTO();
-            //Setting the details for the assignment details object
-            assignmentDetailsDTO.setId( particularAssignment.getId() );
-            assignmentDetailsDTO.setTitle(particularAssignment.getTitle());
-            assignmentDetailsDTO.setDescription(particularAssignment.getDescription());
-            assignmentDetailsDTO.setDeadline(  particularAssignment.getDeadline() );
+            AssignmentDetailsDTO assignmentDetailsDTO = dtoObjectsCreator.createAssignmentDetailsDTO( particularAssignment );
 
             //Create the Assignment Response DTO object
             AssignmentResponseDTO assignmentResponseDTO = dtoObjectsCreator.createAssignmentResponseDTO( assignmentDetailsDTO, null);

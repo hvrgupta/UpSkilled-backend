@@ -28,4 +28,6 @@ public interface CreateDTOObjects
 
     public CourseMessagesResponseDTO createCourseMessagesResponseDTO(Map<String,String> userDetails, List<Message> messages);
 
+    public AssignmentDetailsDTO createAssignmentDetailsDTO(Assignment assignmentDetails);
+
 }

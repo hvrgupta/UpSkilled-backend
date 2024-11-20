@@ -134,4 +134,19 @@ public class CreateDTOObjectsImpl implements CreateDTOObjects
         return courseMessagesResponseDTO;
 
     }
+
+    @Override
+    public AssignmentDetailsDTO createAssignmentDetailsDTO(Assignment assignmentDetails)
+    {
+        //Create the assignmentDetails DTO Object for the Assignment Response DTO
+        AssignmentDetailsDTO assignmentDetailsDTO = new AssignmentDetailsDTO();
+        //Setting the details from the assignment object
+        assignmentDetailsDTO.setTitle(assignmentDetails.getTitle() );
+        assignmentDetailsDTO.setDescription(assignmentDetails.getDescription());
+        assignmentDetailsDTO.setDeadline(  assignmentDetails.getDeadline() );
+        assignmentDetailsDTO.setId( assignmentDetails.getId() );
+
+        //Return the DTO object
+        return assignmentDetailsDTO;
+    }
 }
