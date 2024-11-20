@@ -21,6 +21,18 @@ public class CoursePropertyValidator
     @Autowired
     CourseService courseService;
 
+    /**
+     * Checks whether a given property belongs to a specific course.
+     *
+     * This method validates if a property (such as a course material or assignment) is associated with the course identified
+     * by the provided course ID. The property is specified through a map where the key is the type of property (e.g.,
+     * "courseMaterial" or "assignment") and the value is the ID of the property. The method will check whether the given
+     * property ID exists within the specified course's associated materials or assignments.
+     *
+     * @param courseId The ID of the course to validate the property against.
+     * @param propertyValue A map containing the property type as the key and the property ID as the value.
+     * @return `true` if the property exists in the specified course, otherwise `false`.
+     */
     public boolean isPropertyOfTheCourse(long courseId , Map<String,Long> propertyValue)
     {
         //Fetch the corresponding course related to the courseID;

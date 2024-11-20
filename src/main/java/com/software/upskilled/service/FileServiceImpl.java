@@ -75,6 +75,19 @@ public class FileServiceImpl implements FileService {
                 .build();
     }
 
+    /**
+     * Uploads the syllabus file for a given course to the S3 bucket and updates the course's syllabus URL.
+     *
+     * This method accepts a syllabus file (`multipartFile`) and associates it with a specific course
+     * (identified by `courseId`). The file is uploaded to an S3 bucket with metadata, and the file path
+     * is stored in the `syllabusUrl` field of the course. The method returns a `FileUploadResponse` object
+     * containing the file path and upload timestamp.
+     *
+     * @param multipartFile The syllabus file to be uploaded.
+     * @param courseId The ID of the course for which the syllabus is being uploaded.
+     * @return A `FileUploadResponse` containing the file path and timestamp of the upload.
+     * @throws FileUploadException if an error occurs during the file upload process.
+     */
     @Override
     public FileUploadResponse uploadSyllabus(MultipartFile multipartFile, Long courseId) {
 
@@ -99,6 +112,22 @@ public class FileServiceImpl implements FileService {
         return fileUploadResponse;
     }
 
+    /**
+     * Uploads a course material file to the S3 bucket and saves the corresponding course material details in the database.
+     *
+     * This method takes in a course material file (`multipartFile`), instructor data (`instructorData`),
+     * course data (`courseData`), and course material details (`courseMaterialDetails`). It uploads the file
+     * to an S3 bucket, generates a file path based on the instructor's and course's information, and saves the
+     * course material details to the database. The method returns a `FileUploadResponse` object containing the
+     * file path and the timestamp of the upload.
+     *
+     * @param multipartFile The course material file to be uploaded.
+     * @param instructorData A string containing instructor's name and ID in the format "firstName_lastName_instructorId".
+     * @param courseData A string containing the course title and ID in the format "courseTitle_courseId".
+     * @param courseMaterialDetails A DTO containing details about the course material (title, description).
+     * @return A `FileUploadResponse` containing the file path and timestamp of the upload.
+     * @throws FileUploadException if an error occurs during the file upload process.
+     */
     @Override
     public FileUploadResponse uploadCourseMaterial(MultipartFile multipartFile, String instructorData, String courseData,
                                                    CourseMaterialDTO courseMaterialDetails)
@@ -147,6 +176,23 @@ public class FileServiceImpl implements FileService {
         return fileUploadResponse;
     }
 
+    /**
+     * Updates an existing course material file in the S3 bucket and updates the corresponding course material details in the database.
+     *
+     * This method takes in a course material file (`multipartFile`), instructor data (`instructorData`),
+     * course data (`courseData`), course material details (`courseMaterialDTO`), and the existing course material
+     * (`existingCourseMaterial`). It uploads the new file to the S3 bucket, generates a file path based on the
+     * instructor's and course's information, updates the existing course material details, and saves them back
+     * into the database. The method returns a `FileUploadResponse` object containing the file path and timestamp of the upload.
+     *
+     * @param multipartFile The course material file to be uploaded.
+     * @param instructorData A string containing instructor's name and ID in the format "firstName_lastName_instructorId".
+     * @param courseData A string containing the course title and ID in the format "courseTitle_courseId".
+     * @param courseMaterialDTO A DTO containing the updated details of the course material (title, description).
+     * @param existingCourseMaterial The existing `CourseMaterial` object to be updated.
+     * @return A `FileUploadResponse` containing the updated file path and timestamp of the upload.
+     * @throws FileUploadException if an error occurs during the file upload process.
+     */
     @Override
     public FileUploadResponse updateCourseMaterial(MultipartFile multipartFile, String instructorData, String courseData, CourseMaterialDTO courseMaterialDTO, CourseMaterial existingCourseMaterial) {
         FileUploadResponse fileUploadResponse = new FileUploadResponse();
@@ -189,6 +235,22 @@ public class FileServiceImpl implements FileService {
         return fileUploadResponse;
     }
 
+    /**
+     * Uploads an assignment submission file to the S3 bucket and saves the corresponding submission details in the database.
+     *
+     * This method accepts an assignment submission file (`multipartFile`), course details (`courseData`),
+     * assignment details (`assignmentData`), and employee details (`employeeData`). It uploads the file to the S3
+     * bucket, generates a file path based on the course, assignment, and employee information, and creates a new
+     * submission record in the database. The method returns a `FileUploadResponse` containing the file path and
+     * timestamp of the upload.
+     *
+     * @param multipartFile The assignment submission file to be uploaded.
+     * @param courseData The course object containing details like the course title.
+     * @param assignmentData The assignment object containing the assignment title.
+     * @param employeeData The employee (user) object containing the employee's details.
+     * @return A `FileUploadResponse` containing the uploaded file path and timestamp.
+     * @throws FileUploadException if an error occurs during the file upload process.
+     */
     @Override
     public FileUploadResponse uploadAssignmentSubmission(MultipartFile multipartFile, Course courseData, Assignment assignmentData, Users employeeData)
     {
@@ -232,6 +294,19 @@ public class FileServiceImpl implements FileService {
 
     }
 
+    /**
+     * Updates an existing assignment submission by uploading a new file and saving the updated submission details.
+     *
+     * This method handles the process of updating an already submitted assignment by accepting a new submission file
+     * (`multipartFile`) and the existing `Submission` object (`alreadySubmittedSubmission`). It uploads the file to the
+     * S3 bucket and updates the corresponding submission URL in the database. The method returns a `FileUploadResponse`
+     * containing the file path and the timestamp of the upload.
+     *
+     * @param multipartFile The new assignment submission file to be uploaded.
+     * @param alreadySubmittedSubmission The existing `Submission` object that needs to be updated.
+     * @return A `FileUploadResponse` containing the file path and timestamp of the updated submission.
+     * @throws FileUploadException if an error occurs during the file upload or update process.
+     */
     @Override
     @Transactional
     public FileUploadResponse updateAssignmentSubmission(MultipartFile multipartFile, Submission alreadySubmittedSubmission) {
@@ -276,6 +351,17 @@ public class FileServiceImpl implements FileService {
 
     }
 
+    /**
+     * Asynchronously deletes a course material file from the S3 bucket.
+     *
+     * This method accepts the URL of a course material file, deletes it from the S3 storage, and returns a response indicating
+     * whether the deletion was successful. The file name is extracted from the URL for the response, and if the deletion fails,
+     * an exception is thrown.
+     *
+     * @param courseMaterialURL The URL of the course material file to be deleted from S3 storage.
+     * @return A `FileDeletionResponse` indicating the success of the deletion operation and the file name.
+     * @throws IllegalStateException if an error occurs during the file deletion process.
+     */
     @Override
     @Async
     public FileDeletionResponse deleteCourseMaterial(String courseMaterialURL) {
@@ -297,6 +383,17 @@ public class FileServiceImpl implements FileService {
         }
     }
 
+    /**
+     * Asynchronously deletes an uploaded assignment file from the S3 bucket.
+     *
+     * This method accepts the URL of an assignment submission file, deletes it from the S3 storage, and returns a response indicating
+     * whether the deletion was successful. The file name is extracted from the URL for the response, and if the deletion fails,
+     * an exception is thrown.
+     *
+     * @param submissionURL The URL of the assignment submission file to be deleted from S3 storage.
+     * @return A `FileDeletionResponse` indicating the success of the deletion operation and the file name.
+     * @throws IllegalStateException if an error occurs during the file deletion process.
+     */
     @Override
     @Async
     public FileDeletionResponse deleteUploadedAssignment(String submissionURL) {
@@ -320,6 +417,16 @@ public class FileServiceImpl implements FileService {
 
 //    View buckets
 
+    /**
+     * Asynchronously retrieves the content of a course material file from the S3 bucket.
+     *
+     * This method takes the URL of a course material file, fetches it from the S3 storage, and returns its content as a byte array.
+     * If the file retrieval fails due to an error in accessing the file or reading its content, an exception is thrown.
+     *
+     * @param courseMaterialURL The URL of the course material file to be retrieved from S3 storage.
+     * @return A byte array representing the content of the course material file.
+     * @throws IllegalStateException if an error occurs during the file download or reading process.
+     */
     @Override
     @Async
     public byte[] viewCourseMaterial( String courseMaterialURL)
@@ -334,7 +441,16 @@ public class FileServiceImpl implements FileService {
         }
     }
 
-
+    /**
+     * Asynchronously retrieves the syllabus file of a course from the S3 bucket.
+     *
+     * This method uses the course ID to find the associated course and fetches the syllabus file from S3 storage using the syllabus URL stored in the course object.
+     * The syllabus file is returned as a byte array. If there is an issue accessing or reading the file, an exception is thrown.
+     *
+     * @param courseId The ID of the course whose syllabus file is to be retrieved.
+     * @return A byte array representing the content of the syllabus file.
+     * @throws IllegalStateException if an error occurs while downloading or reading the file.
+     */
     @Override
     @Async
     public byte[] viewSyllabus(Long courseId) {
@@ -352,6 +468,16 @@ public class FileServiceImpl implements FileService {
 
     }
 
+    /**
+     * Asynchronously retrieves an assignment submission file from the S3 bucket.
+     *
+     * This method takes the assignment submission URL and fetches the corresponding file from the S3 storage.
+     * The file content is returned as a byte array. If there is an error during file retrieval or reading, an exception is thrown.
+     *
+     * @param assignmentSubmissionURL The URL of the assignment submission file to be retrieved from S3.
+     * @return A byte array representing the content of the assignment submission file.
+     * @throws IllegalStateException if an error occurs while downloading or reading the file.
+     */
     @Override
     @Async
     public byte[] viewAssignmentSubmission(String assignmentSubmissionURL) {

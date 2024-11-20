@@ -16,6 +16,16 @@ import java.util.Map;
 @Component
 public class CreateDTOObjectsImpl implements CreateDTOObjects
 {
+    /**
+     * Converts a user object to a CreateUserDTO object.
+     *
+     * This method takes a `Users` entity object and maps its properties (such as first name, last name, email, designation,
+     * ID, and role) to a `CreateUserDTO` object. The resulting DTO can be used for data transfer or for creating a user in
+     * an API response.
+     *
+     * @param userObject The `Users` entity object to be converted into a `CreateUserDTO`.
+     * @return A `CreateUserDTO` object populated with data from the provided `userObject`.
+     */
     @Override
     public CreateUserDTO createUserDTO(Users userObject) {
         //Creating the User DTO Object
@@ -30,6 +40,19 @@ public class CreateDTOObjectsImpl implements CreateDTOObjects
         return createUserDTO;
     }
 
+    /**
+     * Converts a Submission entity into a SubmissionResponseDTO for data transfer.
+     *
+     * This method creates a `SubmissionResponseDTO` by extracting relevant information from the provided `Submission`,
+     * `Assignment`, and `Users` entities. It also checks if the submission has been graded and includes the grade details
+     * in the response if available. The DTO object encapsulates the submission details, assignment information, user details,
+     * and gradebook data (if applicable).
+     *
+     * @param submission The `Submission` entity that contains the submission details.
+     * @param assignment The `Assignment` entity related to the submission.
+     * @param userDetails The `Users` entity representing the user who submitted the assignment.
+     * @return A `SubmissionResponseDTO` containing submission details, user information, and gradebook (if graded).
+     */
     @Override
     public SubmissionResponseDTO createSubmissionDTO(Submission submission, Assignment assignment, Users userDetails) {
         //Create the Submission Response DTO Object
@@ -69,6 +92,18 @@ public class CreateDTOObjectsImpl implements CreateDTOObjects
         return submissionResponseDTO;
     }
 
+    /**
+     * Converts a Gradebook entity into a GradeBookResponseDTO for data transfer.
+     *
+     * This method creates a `GradeBookResponseDTO` by extracting relevant information from the provided `Gradebook` entity,
+     * including the grade, feedback, and grading date. It also includes the instructor ID and submission ID associated with the
+     * grade entry. The resulting DTO is used to transfer the grade details to the client.
+     *
+     * @param gradebook The `Gradebook` entity containing the grading details.
+     * @param instructorID The ID of the instructor who graded the submission.
+     * @param submissionId The ID of the submission being graded.
+     * @return A `GradeBookResponseDTO` containing the grading information, feedback, and related submission/instructor details.
+     */
     @Override
     public GradeBookResponseDTO createGradeBookResponseDTO(Gradebook gradebook, Long instructorID, Long submissionId) {
 
@@ -87,6 +122,18 @@ public class CreateDTOObjectsImpl implements CreateDTOObjects
         return gradeBookResponseDTO;
     }
 
+    /**
+     * Converts assignment and submission data into an AssignmentResponseDTO for data transfer.
+     *
+     * This method creates an `AssignmentResponseDTO` by populating it with the details of an assignment and its corresponding
+     * submissions. It accepts an `AssignmentDetailsDTO` object containing the assignment information and a list of
+     * `SubmissionResponseDTO` objects representing the details of submissions associated with the assignment.
+     * The resulting DTO is used to transfer assignment and submission details to the client.
+     *
+     * @param assignmentDetailsDTO The `AssignmentDetailsDTO` containing the details of the assignment.
+     * @param submissionResponseDTOList A list of `SubmissionResponseDTO` objects representing the submissions for the assignment.
+     * @return An `AssignmentResponseDTO` containing the assignment details and a list of submission details.
+     */
     @Override
     public AssignmentResponseDTO createAssignmentResponseDTO(AssignmentDetailsDTO assignmentDetailsDTO, List<SubmissionResponseDTO> submissionResponseDTOList) {
 
@@ -101,6 +148,15 @@ public class CreateDTOObjectsImpl implements CreateDTOObjects
         return assignmentResponseDTO;
     }
 
+    /**
+     * Converts message data into a MessageResponseDTO for data transfer.
+     *
+     * This method creates a `MessageResponseDTO` by extracting details from a given `Message` object. It populates the DTO
+     * with the message's ID, content, read status, and timestamp. The resulting DTO is used to transfer message details to the client.
+     *
+     * @param messageDetails The `Message` object containing the details of the message to be converted.
+     * @return A `MessageResponseDTO` containing the message details, including its ID, content, read status, and sent time.
+     */
     @Override
     public MessageResponseDTO createMessageResponseDTO(Message messageDetails) {
         //Creating the MessageResponse DTO Object
@@ -116,6 +172,17 @@ public class CreateDTOObjectsImpl implements CreateDTOObjects
         return   messageResponseDTO;
     }
 
+    /**
+     * Creates a CourseMessagesResponseDTO by transforming a list of messages and user details.
+     *
+     * This method creates a `CourseMessagesResponseDTO` that encapsulates user details and a list of message data. It iterates
+     * through the provided list of `Message` objects and converts each into a `MessageResponseDTO` using the `createMessageResponseDTO` method.
+     * The final DTO contains the user details and the list of message DTOs, which is used to transfer course-related message data.
+     *
+     * @param userDetails A map containing details about the user, typically their ID or role, to be included in the response.
+     * @param messages A list of `Message` objects to be converted into `MessageResponseDTO` objects.
+     * @return A `CourseMessagesResponseDTO` containing the user details and the list of message response DTOs.
+     */
     @Override
     public CourseMessagesResponseDTO createCourseMessagesResponseDTO(Map<String, String> userDetails, List<Message> messages) {
         //Create the CourseMessageResponseDTO object
@@ -135,6 +202,15 @@ public class CreateDTOObjectsImpl implements CreateDTOObjects
 
     }
 
+    /**
+     * Creates an AssignmentDetailsDTO from the provided Assignment object.
+     *
+     * This method transforms an `Assignment` object into an `AssignmentDetailsDTO`, which contains relevant assignment details
+     * such as the title, description, deadline, and ID. This DTO can be used to return assignment-specific information in a structured format.
+     *
+     * @param assignmentDetails The `Assignment` object from which the details are extracted.
+     * @return An `AssignmentDetailsDTO` containing the assignment's title, description, deadline, and ID.
+     */
     @Override
     public AssignmentDetailsDTO createAssignmentDetailsDTO(Assignment assignmentDetails)
     {

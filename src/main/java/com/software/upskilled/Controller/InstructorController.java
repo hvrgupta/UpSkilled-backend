@@ -72,6 +72,14 @@ public class InstructorController {
         return "Hello Instructor";
     }
 
+    /**
+     * Endpoint to retrieve details of the currently authenticated user.
+     *
+     * @param user the authenticated user object, injected by Spring Security.
+     * @return a CreateUserDTO object containing sanitized user information such as
+     *         ID, email, role, first name, last name, designation, and status.
+     *         The password field is obfuscated for security.
+     */
     @GetMapping("/me")
     public CreateUserDTO getCurrentUser(@AuthenticationPrincipal Users user) {
         CreateUserDTO userDTO = new CreateUserDTO();
@@ -86,6 +94,16 @@ public class InstructorController {
         return userDTO;
     }
 
+    /**
+     * Endpoint to retrieve a list of courses assigned to the authenticated instructor.
+     *
+     * @param authentication the authentication object containing the user's details,
+     *                       injected by Spring Security.
+     * @return a ResponseEntity containing a list of CourseInfoDTO objects. Each DTO
+     *         includes course details such as ID, title, description, instructor details,
+     *         name, and status. Only active courses are included in the response, sorted
+     *         by their last updated timestamp in descending order.
+     */
     @GetMapping("/courses")
     public ResponseEntity<List<CourseInfoDTO>> viewCoursesForInstructor(Authentication authentication) {
 
@@ -110,6 +128,17 @@ public class InstructorController {
         return ResponseEntity.ok(courseList);
     }
 
+    /**
+     * Endpoint to retrieve detailed information about a specific course.
+     *
+     * @param courseId       the ID of the course to retrieve.
+     * @param authentication the authentication object containing the user's details,
+     *                       injected by Spring Security.
+     * @return a ResponseEntity containing a CourseInfoDTO object with detailed course
+     *         information such as ID, title, description, instructor details, name, and status.
+     *         If the authenticated user is not authorized to access the course, an appropriate
+     *         error response is returned.
+     */
     @GetMapping("/course/{courseId}")
     public ResponseEntity<?> getCourseDetails(@PathVariable Long courseId, Authentication authentication) {
 
@@ -133,6 +162,16 @@ public class InstructorController {
         return ResponseEntity.ok(courseInfoDTO);
     }
 
+    /**
+     * Endpoint to retrieve a list of announcements for a specific course, intended for editing purposes.
+     *
+     * @param courseId       the ID of the course whose announcements are to be retrieved.
+     * @param authentication the authentication object containing the user's details,
+     *                       injected by Spring Security.
+     * @return a ResponseEntity containing a list of AnnouncementRequestDTO objects, each
+     *         representing an announcement with details such as ID, title, content, and last updated timestamp.
+     *         If the authenticated user is not authorized to access the course, an appropriate error response is returned.
+     */
     // View announcements for a specific course
     @GetMapping("/course/{courseId}/announcements")
     public ResponseEntity<?> viewAnnouncementsForEditing(
@@ -156,6 +195,16 @@ public class InstructorController {
         return ResponseEntity.ok(announcementDTOs);
     }
 
+    /**
+     * Endpoint to retrieve a list of announcements for a specific course, intended for editing purposes.
+     *
+     * @param courseId       the ID of the course whose announcements are to be retrieved.
+     * @param authentication the authentication object containing the user's details,
+     *                       injected by Spring Security.
+     * @return a ResponseEntity containing a list of AnnouncementRequestDTO objects, each
+     *         representing an announcement with details such as ID, title, content, and last updated timestamp.
+     *         If the authenticated user is not authorized to access the course, an appropriate error response is returned.
+     */
     // Create a new announcement
     @PostMapping("/course/{courseId}/announcement")
     public ResponseEntity<String> createAnnouncement(
@@ -185,6 +234,18 @@ public class InstructorController {
         return ResponseEntity.ok("Announcement created successfully");
     }
 
+
+    /**
+     * Endpoint to retrieve a specific announcement by its ID.
+     *
+     * @param id             the ID of the announcement to be retrieved.
+     * @param authentication the authentication object containing the user's details,
+     *                       injected by Spring Security.
+     * @return a ResponseEntity containing the AnnouncementRequestDTO with details such as
+     *         ID, title, content, and last updated timestamp.
+     *         Returns a 404 error response if the announcement does not exist, or an
+     *         error response if the authenticated user is not authorized to access the course.
+     */
     @GetMapping("/getAnnouncementById/{id}")
     public ResponseEntity<?> getAnnouncementById(
             @PathVariable Long id, Authentication authentication) {
@@ -214,6 +275,18 @@ public class InstructorController {
 
     }
 
+    /**
+     * Endpoint to edit an existing announcement.
+     *
+     * @param announcementId the ID of the announcement to be edited.
+     * @param announcementDTO the AnnouncementDTO object containing the updated title and content.
+     * @param authentication  the authentication object containing the user's details,
+     *                        injected by Spring Security.
+     * @return a ResponseEntity with a success message upon successful update of the announcement.
+     *         Returns a 404 error response if the announcement does not exist, a bad request response
+     *         if the title or content is missing, or an error response if the authenticated user is
+     *         not authorized to access the course.
+     */
     // Edit an existing announcement
     @PutMapping("/announcement/{announcementId}")
     public ResponseEntity<?> editAnnouncement(
@@ -249,6 +322,16 @@ public class InstructorController {
     }
 
     // Delete an existing announcement
+    /**
+     * Endpoint to delete an existing announcement by its ID.
+     *
+     * @param announcementId the ID of the announcement to be deleted.
+     * @param authentication the authentication object containing the user's details,
+     *                       injected by Spring Security.
+     * @return a ResponseEntity with a success message upon successful deletion of the announcement.
+     *         Returns a bad request response if the announcement does not exist, or an error
+     *         response if the authenticated user is not authorized to access the course.
+     */
     @DeleteMapping("/deleteAnnouncementById/{announcementId}")
     public ResponseEntity<String> deleteAnnouncement(
             @PathVariable Long announcementId,
@@ -273,6 +356,15 @@ public class InstructorController {
         return ResponseEntity.ok("Announcement Deleted successfully");
     }
 
+    /**
+     * Endpoint to upload a syllabus file for a specific course.
+     * Validates file type and instructor's authorization before proceeding with the upload.
+     *
+     * @param file           The syllabus file to be uploaded (only PDF is allowed).
+     * @param courseId       The ID of the course for which the syllabus is being uploaded.
+     * @param authentication The authentication object containing the current user's details.
+     * @return A ResponseEntity containing the upload result or an error message with appropriate HTTP status.
+     */
     @PostMapping("/uploadSyllabus/{courseId}")
     public ResponseEntity<?> uploadSyllabus(@RequestParam("file") MultipartFile file, @PathVariable Long courseId, Authentication authentication) {
 
@@ -289,7 +381,13 @@ public class InstructorController {
         return new ResponseEntity<>(fileService.uploadSyllabus(file,courseId), HttpStatus.OK);
     }
 
-
+    /**
+     * Endpoint to retrieve and view the syllabus for a specific course.
+     * Verifies if the syllabus is uploaded and returns the file for download.
+     *
+     * @param courseId The ID of the course whose syllabus is being requested.
+     * @return A ResponseEntity containing the syllabus file or an error message if not found.
+     */
     @GetMapping("/{courseId}/syllabus")
     public ResponseEntity<?>  viewSyllabus(@PathVariable Long courseId) {
 
@@ -321,7 +419,15 @@ public class InstructorController {
     }
 
     /* Assignment's endpoint */
-
+    /**
+     * Endpoint to create a new assignment for a specific course.
+     * Verifies instructor authorization, validates assignment details, and creates the assignment.
+     *
+     * @param courseId   The ID of the course for which the assignment is being created.
+     * @param assignment The assignment details to be created.
+     * @param authentication The authentication details of the instructor creating the assignment.
+     * @return A ResponseEntity with the result of the assignment creation or an error message.
+     */
     @PostMapping("/{courseId}/assignment/create")
     public ResponseEntity<String> createAssignment(@PathVariable Long courseId,
                                                        @RequestBody Assignment assignment,Authentication authentication) {
@@ -359,6 +465,14 @@ public class InstructorController {
         return ResponseEntity.ok("Assignment Created successfully.");
     }
 
+    /**
+     * Endpoint to retrieve assignment details by its ID.
+     * Verifies instructor authorization and returns assignment details in a response DTO.
+     *
+     * @param assignmentId The ID of the assignment to retrieve.
+     * @param authentication The authentication details of the instructor requesting the assignment.
+     * @return A ResponseEntity containing the assignment details or an error message if not found.
+     */
     @GetMapping("/getAssignmentById/{assignmentId}")
     public ResponseEntity<?> getAssignmentById(@PathVariable Long assignmentId, Authentication authentication) {
 
@@ -384,6 +498,16 @@ public class InstructorController {
 
 
     // Update an assignment (only for instructors)
+    /**
+     * Endpoint to update an existing assignment for a specific course.
+     * Verifies instructor authorization, checks assignment details, and updates the assignment.
+     *
+     * @param courseId        The ID of the course to which the assignment belongs.
+     * @param assignmentId    The ID of the assignment to be updated.
+     * @param updatedAssignment The updated assignment details.
+     * @param authentication  The authentication details of the instructor making the update request.
+     * @return A ResponseEntity with the result of the assignment update or an error message.
+     */
     @PutMapping("/{courseId}/assignment/{assignmentId}")
     public ResponseEntity<String> updateAssignment(@PathVariable Long courseId,
                                                        @PathVariable Long assignmentId,
@@ -419,6 +543,15 @@ public class InstructorController {
     }
 
     // Delete an assignment (only for instructors)
+    /**
+     * Endpoint to delete an existing assignment for a specific course.
+     * Verifies instructor authorization, checks assignment validity, and deletes the assignment.
+     *
+     * @param courseId       The ID of the course from which the assignment is being deleted.
+     * @param assignmentId   The ID of the assignment to be deleted.
+     * @param authentication The authentication details of the instructor requesting the deletion.
+     * @return A ResponseEntity with the result of the assignment deletion or an error message.
+     */
     @DeleteMapping("/{courseId}/assignment/{assignmentId}")
     public ResponseEntity<String> deleteAssignment(@PathVariable Long courseId,
                                                  @PathVariable Long assignmentId,
@@ -447,6 +580,14 @@ public class InstructorController {
         return ResponseEntity.ok("Assignment Deleted successfully");
     }
 
+    /**
+     * Endpoint to retrieve all assignments for a specific course.
+     * Verifies instructor authorization and returns a list of assignments for the course.
+     *
+     * @param courseId       The ID of the course whose assignments are being requested.
+     * @param authentication The authentication details of the instructor making the request.
+     * @return A ResponseEntity containing the list of assignments for the course or an error message.
+     */
     @GetMapping("/course/{courseId}/assignments")
     public ResponseEntity<?> getAssignmentsForTheCourse(@PathVariable Long courseId, Authentication authentication) {
         ResponseEntity<String> authResponse = instructorCourseAuth.validateInstructorForCourse(courseId, authentication);
@@ -469,6 +610,15 @@ public class InstructorController {
         return ResponseEntity.ok(assignmentsList);
     }
 
+    /**
+     * Endpoint to retrieve all submissions for a specific assignment in a course.
+     * Verifies instructor authorization and checks assignment ownership before returning submission details.
+     *
+     * @param courseID        The ID of the course containing the assignment.
+     * @param assignmentId    The ID of the assignment for which submissions are requested.
+     * @param authentication  The authentication details of the instructor requesting the submissions.
+     * @return A ResponseEntity containing the assignment submission details or an error message.
+     */
     @GetMapping("/{courseID}/{assignmentId}/submissions")
     public ResponseEntity<?> getAssignmentSubmissions(@PathVariable Long courseID, @PathVariable Long assignmentId, Authentication authentication)
     {
@@ -533,6 +683,16 @@ public class InstructorController {
         }
     }
 
+    /**
+     * Endpoint to retrieve and view a particular assignment submission.
+     * Verifies instructor authorization and returns the submission file for download.
+     *
+     * @param assignmentId    The ID of the assignment to which the submission belongs.
+     * @param courseID        The ID of the course containing the assignment.
+     * @param submissionID    The ID of the particular submission to be viewed.
+     * @param authentication  The authentication details of the instructor requesting the submission.
+     * @return A ResponseEntity containing the assignment submission file or an error message if not found.
+     */
     @GetMapping("/{courseID}/assignments/{assignmentId}/submissions/{submissionID}/viewSubmission")
     public ResponseEntity<?> viewParticularAssignmentSubmission(@PathVariable Long assignmentId, @PathVariable Long courseID, @PathVariable Long submissionID, Authentication authentication){
 
@@ -561,6 +721,16 @@ public class InstructorController {
         }
     }
 
+    /**
+     * Endpoint to retrieve details of a particular submission for a specific assignment.
+     * Verifies instructor authorization, checks assignment-submission validity, and returns submission details.
+     *
+     * @param assignmentId    The ID of the assignment for which the submission details are requested.
+     * @param courseID        The ID of the course containing the assignment.
+     * @param submissionID    The ID of the specific submission to retrieve details for.
+     * @param authentication  The authentication details of the instructor requesting the submission details.
+     * @return A ResponseEntity containing the submission details or an error message if not found.
+     */
     @GetMapping("/{courseID}/assignments/{assignmentId}/submissions/{submissionID}")
     public ResponseEntity<?> getSubmissionDetailsForParticularSubmission( @PathVariable Long assignmentId, @PathVariable Long courseID, @PathVariable Long submissionID, Authentication authentication ) throws IOException {
 
@@ -607,7 +777,16 @@ public class InstructorController {
 
     }
 
-
+    /**
+     * Endpoint to submit grades for a specific assignment submission to the gradebook.
+     * Verifies instructor authorization, validates grading details, and updates the gradebook with the grade and feedback.
+     *
+     * @param submissionID    The ID of the submission being graded.
+     * @param courseID        The ID of the course for which the assignment belongs.
+     * @param authentication  The authentication details of the instructor submitting the grades.
+     * @param gradingDetails  The grading details including the grade and feedback.
+     * @return A ResponseEntity containing the gradebook response or an error message if validation fails.
+     */
     @PostMapping("/gradeBook/gradeAssignment")
     public ResponseEntity<?> submitGradesToGradeBook(@RequestParam("submissionId") String submissionID, @RequestParam("courseId") String courseID, Authentication authentication, @RequestBody GradeBookRequestDTO gradingDetails)
     {
@@ -670,6 +849,15 @@ public class InstructorController {
         }
     }
 
+    /**
+     * Endpoint to update the grade and feedback for a specific assignment submission in the gradebook.
+     * Verifies instructor authorization and validates the new grading details before updating the gradebook.
+     *
+     * @param gradeBookRequestDTO The new grading details including grade and feedback.
+     * @param gradingID           The ID of the grading record to be updated.
+     * @param authentication      The authentication details of the instructor updating the grades.
+     * @return A ResponseEntity containing the updated gradebook details or an error message if validation fails.
+     */
     @PutMapping("/gradeBook/updateGradeAssignment")
     public ResponseEntity<?> updateGradeDetails( @RequestBody GradeBookRequestDTO gradeBookRequestDTO,
                                                  @RequestParam("gradingId") long gradingID,
@@ -710,6 +898,17 @@ public class InstructorController {
 
     }
 
+    /**
+     * Endpoint to upload course material for a specific course.
+     * Verifies instructor authorization, validates file type, and uploads the course material.
+     *
+     * @param file                  The course material file to be uploaded (PDF only).
+     * @param courseId              The ID of the course for which the material is being uploaded.
+     * @param courseMaterialTitle   The title of the course material.
+     * @param courseMaterialDescription The description of the course material.
+     * @param authentication        The authentication details of the instructor uploading the material.
+     * @return A ResponseEntity containing the result of the upload or an error message if validation fails.
+     */
     @PostMapping("/uploadCourseMaterial/{courseId}")
     public ResponseEntity<?> uploadCourseMaterial(@RequestParam("file") MultipartFile file, @PathVariable Long courseId,
                                                   @RequestParam("materialTitle") String courseMaterialTitle,
@@ -743,6 +942,14 @@ public class InstructorController {
         return new ResponseEntity<>(fileService.uploadCourseMaterial( file, instructorName, courseTitle, courseMaterialDetails), HttpStatus.OK);
     }
 
+    /**
+     * Endpoint to retrieve all course materials for a specific course.
+     * Verifies instructor authorization and returns a list of course materials for the course.
+     *
+     * @param courseId       The ID of the course for which materials are being requested.
+     * @param authentication The authentication details of the instructor making the request.
+     * @return A ResponseEntity containing a list of course materials or an empty list if none are available.
+     */
     @GetMapping("/getCourseMaterials/{courseId}")
     public ResponseEntity<?> getAllCourseMaterials(@PathVariable Long courseId, Authentication authentication)
     {
@@ -773,6 +980,15 @@ public class InstructorController {
         }
     }
 
+    /**
+     * Endpoint to retrieve and view a specific course material by its ID.
+     * Verifies instructor authorization, checks course-material validity, and returns the material for download.
+     *
+     * @param courseId           The ID of the course containing the course material.
+     * @param courseMaterialId   The ID of the specific course material to retrieve.
+     * @param authentication     The authentication details of the instructor requesting the course material.
+     * @return A ResponseEntity containing the course material file or an error message if not found.
+     */
     @GetMapping("/getCourseMaterial/{courseId}/{courseMaterialId}")
     public ResponseEntity<?> viewCourseMaterialById(@PathVariable Long courseId, @PathVariable("courseMaterialId") Long courseMaterialId , Authentication authentication)
     {
@@ -810,6 +1026,18 @@ public class InstructorController {
 
     }
 
+    /**
+     * Endpoint to update a specific course material for a course.
+     * Verifies instructor authorization, handles file deletion, and updates the course material details (title, description, file).
+     *
+     * @param file                  The new course material file to be uploaded.
+     * @param courseId              The ID of the course to which the material belongs.
+     * @param courseMaterialId      The ID of the course material to be updated.
+     * @param courseMaterialTitle   The new title for the course material (optional).
+     * @param courseMaterialDescription The new description for the course material (optional).
+     * @param authentication        The authentication details of the instructor updating the material.
+     * @return A ResponseEntity containing the result of the update or an error message if the operation fails.
+     */
     @PutMapping("/updateCourseMaterial/{courseId}/{courseMaterialId}")
     public ResponseEntity<?> updateCourseMaterial(@RequestParam(value = "file", required = true) MultipartFile file, @PathVariable Long courseId,
                                                   @PathVariable Long courseMaterialId,
@@ -880,6 +1108,15 @@ public class InstructorController {
         }
     }
 
+    /**
+     * Endpoint to delete a specific course material for a course.
+     * Verifies instructor authorization, checks material validity, deletes the material file and database entry.
+     *
+     * @param courseId           The ID of the course from which the material is being deleted.
+     * @param courseMaterialId   The ID of the course material to be deleted.
+     * @param authentication     The authentication details of the instructor requesting the deletion.
+     * @return A ResponseEntity containing the result of the deletion or an error message if the operation fails.
+     */
     @DeleteMapping("/deleteCourseMaterial/{courseId}/{courseMaterialId}")
     public ResponseEntity<?> deleteCourseMaterial(@PathVariable Long courseId, @PathVariable("courseMaterialId") Long courseMaterialId, Authentication authentication)
     {
@@ -930,6 +1167,14 @@ public class InstructorController {
         }
     }
 
+    /**
+     * Endpoint to send a message to employees of a specific course.
+     * Verifies instructor authorization, checks for valid course and recipient employee IDs, and sends the message to the employees.
+     *
+     * @param messageRequestDTO The message request containing the course ID, employee IDs, and message content.
+     * @param authentication    The authentication details of the instructor sending the message.
+     * @return A ResponseEntity containing a list of message response details or an error message if the operation fails.
+     */
     @PostMapping("/message/sendMessage")
     public ResponseEntity<?> sendMessageToEmployees( @RequestBody MessageRequestDTO messageRequestDTO, Authentication authentication )
     {
@@ -985,6 +1230,14 @@ public class InstructorController {
         return ResponseEntity.ok( messageResponsesDTOList );
     }
 
+    /**
+     * Endpoint to retrieve messages sent to employees in a specific course.
+     * Verifies instructor authorization, checks for valid course and recipient employees, and returns the list of sent messages.
+     *
+     * @param courseId       The ID of the course for which the sent messages are being requested.
+     * @param authentication The authentication details of the instructor requesting the sent messages.
+     * @return A ResponseEntity containing a list of sent messages grouped by employee or an empty list if no messages are found.
+     */
     @GetMapping( "/course/{courseId}/message/getSentMessages" )
     public ResponseEntity<?> getMessagesSentToEmployee( @PathVariable("courseId") Long courseId, Authentication authentication )
     {
@@ -1038,6 +1291,20 @@ public class InstructorController {
         }
     }
 
+    /**
+     * This endpoint retrieves all messages received by employees from the instructor of a specific course.
+     *
+     * The method first validates if the current authenticated user (instructor) is authorized to view the messages
+     * for the given course. If the user is authorized, the course details are fetched, and a list of unique employee
+     * IDs who have sent messages to the instructor is retrieved. For each employee, the method compiles the employee's
+     * details (name, email, employee ID) and any messages they have received from the instructor for the specified course.
+     *
+     * The response will include a list of messages grouped by employee, or an empty list if no messages exist.
+     *
+     * @param courseId The ID of the course for which received messages are being fetched.
+     * @param authentication The authentication information of the current user (instructor).
+     * @return A ResponseEntity containing a list of course message details or an empty list if no messages are found.
+     */
     @GetMapping( "/course/{courseId}/message/getReceivedMessages" )
     public ResponseEntity<?> getMessagesReceivedFromEmployee( @PathVariable("courseId") Long courseId, Authentication authentication )
     {
@@ -1091,6 +1358,19 @@ public class InstructorController {
         }
     }
 
+    /**
+     * This endpoint updates the read status of messages received by an employee from the instructor of a specific course.
+     *
+     * The method first validates if the current authenticated user (instructor) is authorized to update the message read
+     * status for the given course. If the user is authorized, the course and instructor details are fetched, and the
+     * read status of messages received by the specified employee is updated. If no rows are updated, an error response
+     * is returned, otherwise, a success response is returned indicating that the read status has been updated.
+     *
+     * @param employeeId The ID of the employee whose message read status is being updated.
+     * @param courseId The ID of the course for which the message read status is being updated.
+     * @param authentication The authentication information of the current user (instructor).
+     * @return A ResponseEntity indicating the success or failure of the operation.
+     */
     @PutMapping("/message/readMessage")
     public ResponseEntity<?> setMessageStatusToRead( @RequestParam("employeeId") Long employeeId, @RequestParam("courseId") Long courseId, Authentication authentication )
     {
@@ -1115,6 +1395,19 @@ public class InstructorController {
             return sucessResponseMessageUtil.createSuccessResponseMessages( HttpStatus.OK.value(), "The read status of all the messages have been updated");
     }
 
+
+    /**
+     * This endpoint retrieves a list of all employees (students) enrolled in a specific course.
+     *
+     * The method first validates if the current authenticated user (instructor) is authorized to view the enrollment
+     * details for the given course. If the user is authorized, the course details are fetched, and the list of employees
+     * (students) enrolled in the course is retrieved. The employee details are then mapped to UserDTO objects, which are
+     * returned as part of the response. If no employees are enrolled in the course, an empty list is returned.
+     *
+     * @param courseId The ID of the course for which enrolled students are being retrieved.
+     * @param authentication The authentication information of the current user (instructor).
+     * @return A ResponseEntity containing a list of user details for all employees enrolled in the course.
+     */
     @GetMapping("/course/{courseId}/getAllEmployees")
     public ResponseEntity<?> getAllEnrolledStudentsInCourse( @PathVariable("courseId") Long courseId, Authentication authentication )
     {

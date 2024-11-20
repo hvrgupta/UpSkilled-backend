@@ -23,6 +23,17 @@ public class EmployeeCourseAuth {
         this.courseService = courseService;
     }
 
+    /**
+     * Validates whether the currently authenticated employee is enrolled in the specified course.
+     *
+     * This method checks if the course exists and is active, then verifies whether the authenticated user (employee) is enrolled
+     * in the course by matching their email with the course's enrollment list. If the course is invalid or the employee is not enrolled,
+     * an appropriate error response is returned.
+     *
+     * @param courseId The ID of the course to validate the employee's enrollment for.
+     * @param authentication The authentication object containing the currently authenticated user's details.
+     * @return A `ResponseEntity` containing a message indicating the validation result, or `null` if the validation passes.
+     */
     public ResponseEntity<String> validateEmployeeForCourse(Long courseId, Authentication authentication) {
 
         Course course = courseService.findCourseById(courseId);
