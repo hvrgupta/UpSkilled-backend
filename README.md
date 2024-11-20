@@ -13,6 +13,47 @@ This backend service for UpSkilled is developed using Java and the Spring Framew
 <p>src/test/: Contains unit tests for the application.</p>
 <p>src/main/resources: Contains configuration files such as application.properties</p>
 
+### Configure the JWT secret in the application.properties file:
+<ol>
+  <li>Generate a 256-bit encrypted secret for JWT.</li>
+  <li>Add the following property to your <code>application.properties</code> file:</li>
+</ol>
+<pre>
+jwt.secret=&lt;your-256-bit-encrypted-secret&gt;
+</pre>
+<h3>AWS S3 Configuration for UpSkilled</h3>
+<p>UpSkilled uses AWS S3 to store course-related data, including syllabi, course materials, and assignments. To set this up, follow these steps:</p>
+<ol>
+  <li>
+    <strong>Generate AWS Access and Secret Keys:</strong>
+    <ul>
+      <li>Log in to your AWS account.</li>
+      <li>Navigate to the IAM service to create an access key and secret key for your application.</li>
+    </ul>
+  </li>
+  <li>
+    <strong>Create Unique Buckets for Data Storage:</strong>
+    <ul>
+      <li>Since bucket names must be unique across AWS, create three separate buckets in the <code>us-east-1</code> region for:</li>
+      <ul>
+        <li>Syllabus</li>
+        <li>Course materials</li>
+        <li>Assignments</li>
+      </ul>
+    </ul>
+  </li>
+  <li>
+    <strong>Configure Application Properties:</strong>
+    <p>Add the following properties in the <code>application.properties</code> file of the application:</p>
+    <pre>
+aws.s3.accessKey=&lt;your-AWS-access-key&gt;
+aws.s3.secretKey=&lt;your-AWS-secret-key&gt;
+aws.s3.bucketName=&lt;syllabus-bucket-name&gt;
+aws.s3.course-materials-bucketName=&lt;course-materials-bucket-name&gt;
+aws.s3.assignment-bucketName=&lt;assignments-bucket-name&gt;</pre>
+  </li>
+</ol>
+
 ## Building the Project
 <p>To build the project and package it into a JAR file, use the following command in the project directory:</p>
 
