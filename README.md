@@ -13,6 +13,17 @@ This backend service for UpSkilled is developed using Java and the Spring Framew
 <p>src/test/: Contains unit tests for the application.</p>
 <p>src/main/resources: Contains configuration files such as application.properties</p>
 
+<h3>MySQL Database Configuration</h3>
+<p>Configure the MySQL database by adding the following properties to the <code>application.properties</code> file:</p>
+
+<pre>
+spring.datasource.url=jdbc:mysql://&lt;host&gt;:&lt;port&gt;/&lt;database-name&gt;
+spring.datasource.username=&lt;your-database-username&gt;
+spring.datasource.password=&lt;your-database-password&gt;
+</pre>
+
+<p>Replace <code>&lt;host&gt;</code>, <code>&lt;port&gt;</code>, <code>&lt;database-name&gt;</code>, <code>&lt;your-database-username&gt;</code>, and <code>&lt;your-database-password&gt;</code> with your actual database connection details.</p>
+
 ### Configure the JWT secret in the application.properties file:
 <ol>
   <li>Generate a 256-bit encrypted secret for JWT.</li>
