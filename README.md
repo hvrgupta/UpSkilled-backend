@@ -70,7 +70,7 @@ aws.s3.assignment-bucketName=&lt;assignments-bucket-name&gt;</pre>
 <p>To build the project and package it into a JAR file, use the following command in the project directory:</p>
 
 ```bash
-mvn package -DskipTests=true
+mvn clean package -DskipTests=true
 ```
 The JAR file will be created in the target directory.
 
