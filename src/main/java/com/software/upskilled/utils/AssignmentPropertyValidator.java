@@ -20,6 +20,18 @@ public class AssignmentPropertyValidator
     @Autowired
     AssignmentService assignmentService;
 
+    /**
+     * Validates if a given submission exists for a specific assignment.
+     *
+     * This method checks whether the specified submission ID is associated with the given assignment ID.
+     * It first retrieves the assignment details and verifies if the submission ID exists within the assignment's submissions.
+     * If a matching submission is found, the method returns `true`, indicating that the submission is valid for the assignment.
+     * Otherwise, it returns `false`.
+     *
+     * @param assignmentID The ID of the assignment to validate against.
+     * @param submissionID The ID of the submission to validate.
+     * @return `true` if the submission exists for the specified assignment, otherwise `false`.
+     */
     public boolean validateSubmissionAgainstAssignment( long assignmentID, long submissionID ) {
         Assignment assignmentDetails = assignmentService.getAssignmentById( assignmentID );
         //Check if the assignmentDetails is null

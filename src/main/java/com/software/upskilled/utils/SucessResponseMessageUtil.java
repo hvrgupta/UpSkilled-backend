@@ -12,6 +12,15 @@ import org.springframework.stereotype.Service;
 @Service
 public class SucessResponseMessageUtil
 {
+    /**
+     * Creates a standardized success response with an HTTP status code and message.
+     *
+     * @param httpCode the HTTP status code to be returned with the response.
+     * @param successMessage the success message to be included in the response body.
+     * @return a ResponseEntity containing the SuccessResponseDTO with the provided HTTP code
+     *         and success message. Returns a 200 OK response if the HTTP code is 200,
+     *         or the specified status code otherwise.
+     */
     public ResponseEntity<SuccessResponseDTO> createSuccessResponseMessages(int httpCode, String successMessage ) {
         SuccessResponseDTO successResponseDTO = new SuccessResponseDTO();
         successResponseDTO.setHttpCode( httpCode );

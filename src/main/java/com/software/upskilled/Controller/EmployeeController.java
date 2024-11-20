@@ -68,9 +68,23 @@ public class EmployeeController {
 
     @Autowired
     private CoursePropertyValidator coursePropertyValidator;
+
     @Autowired
     private SubmissionService submissionService;
 
+    /**
+     * This endpoint retrieves a list of all active courses that the authenticated user is not enrolled in.
+     *
+     * The method first fetches the authenticated user based on their email. It then collects the IDs of the courses
+     * that the user is currently enrolled in. The list of all active courses is retrieved, and any courses the user is
+     * already enrolled in are excluded. The remaining courses are sorted by their update time in descending order. For
+     * each course, a CourseInfoDTO is created containing relevant details such as the course ID, title, description,
+     * instructor details, and course status. The resulting list of CourseInfoDTO objects is returned as the response.
+     *
+     * @param authentication The authentication information of the current user.
+     * @return A ResponseEntity containing a list of active courses that the user is not enrolled in, represented
+     *         by CourseInfoDTO objects.
+     */
     @GetMapping("/courses")
     public ResponseEntity<List<CourseInfoDTO>> viewCourses(Authentication authentication) {
 
@@ -98,6 +112,19 @@ public class EmployeeController {
         return ResponseEntity.ok(courseList);
     }
 
+    /**
+     * This endpoint retrieves a list of all active courses that the authenticated user (employee) is enrolled in.
+     *
+     * The method first fetches the authenticated user based on their email. It then iterates through the user's
+     * enrollments to get the list of courses they are enrolled in. Only the active courses are included in the response.
+     * The courses are sorted by their update time in descending order. For each course, a CourseInfoDTO is created,
+     * which contains details such as the course ID, title, description, instructor details, and course status. The
+     * resulting list of CourseInfoDTO objects is returned in the response.
+     *
+     * @param authentication The authentication information of the current user (employee).
+     * @return A ResponseEntity containing a list of active courses that the user is enrolled in, represented by
+     *         CourseInfoDTO objects.
+     */
     @GetMapping("/enrolledCourses")
     public ResponseEntity<List<CourseInfoDTO>> viewEnrolledCourses(Authentication authentication) {
 
@@ -122,6 +149,16 @@ public class EmployeeController {
         return ResponseEntity.ok(courseList);
     }
 
+    /**
+     * This endpoint retrieves the details of a specific course identified by its course ID.
+     *
+     * The method first fetches the course from the database using the provided course ID. It then creates a CourseInfoDTO
+     * object to map the relevant details of the course, including the course ID, title, description, instructor details,
+     * course name, and status. The resulting CourseInfoDTO object is returned as part of the response.
+     *
+     * @param courseId The ID of the course whose details are being retrieved.
+     * @return A ResponseEntity containing the course details represented by a CourseInfoDTO object.
+     */
     @GetMapping("/course/{courseId}")
     public ResponseEntity<?> getCourseDetails(@PathVariable Long courseId) {
 
@@ -139,6 +176,18 @@ public class EmployeeController {
         return ResponseEntity.ok(courseInfoDTO);
     }
 
+    /**
+     * This endpoint checks whether the authenticated user (employee) is enrolled in a specific course.
+     *
+     * The method first retrieves the authenticated user's details based on their email. It then fetches the course
+     * associated with the provided course ID. If the course is not found or is inactive, an error message is returned.
+     * Otherwise, the method checks if the employee is enrolled in the course. If the employee is not enrolled, a message
+     * indicating "Unenrolled" is returned. If the employee is enrolled, a message indicating "Enrolled" is returned.
+     *
+     * @param courseId The ID of the course to check enrollment for.
+     * @param authentication The authentication information of the current user (employee).
+     * @return A ResponseEntity containing a message indicating whether the employee is enrolled or not.
+     */
     @GetMapping("/enrollment/{courseId}")
     public ResponseEntity<?> checkEnrollment(@PathVariable Long courseId, Authentication authentication) {
         String email = authentication.getName();
@@ -157,7 +206,18 @@ public class EmployeeController {
         return ResponseEntity.ok("Enrolled");
     }
 
-    
+    /**
+     * This endpoint allows the authenticated user (employee) to enroll in a specific course.
+     *
+     * The method retrieves the authenticated user's details based on their email and fetches the course associated
+     * with the provided course ID. If the course is not found or is inactive, an error message is returned. If the
+     * course is valid, the enrollment service is called to enroll the employee in the course, and a success message
+     * is returned upon successful enrollment.
+     *
+     * @param courseId The ID of the course the user wishes to enroll in.
+     * @param authentication The authentication information of the current user (employee).
+     * @return A ResponseEntity containing a success message upon successful enrollment or an error message for invalid input.
+     */
     @PostMapping("/enroll")
     public ResponseEntity<String> enrollInCourse(
             @RequestParam Long courseId,
@@ -173,6 +233,18 @@ public class EmployeeController {
         return ResponseEntity.ok(enrollmentService.enrollEmployee(courseId, employee.getId()));
     }
 
+    /**
+     * This endpoint allows the authenticated user (employee) to unenroll from a specific course.
+     *
+     * The method first validates whether the user is enrolled in the specified course by calling the
+     * employeeCourseAuth service. If the validation fails, an error response is returned. If the validation
+     * succeeds, the user's details are fetched based on their email, and the enrollment service is called to
+     * unenroll the user from the course. A success message is returned upon successful unenrollment.
+     *
+     * @param courseId The ID of the course the user wishes to unenroll from.
+     * @param authentication The authentication information of the current user (employee).
+     * @return A ResponseEntity containing a success message upon successful unenrollment or an error message for validation failure.
+     */
     @PostMapping("/unenroll/{courseId}")
     public ResponseEntity<String> unenrollFromCourse(@PathVariable Long courseId,
                                                       Authentication authentication){
@@ -191,6 +263,20 @@ public class EmployeeController {
         return ResponseEntity.ok("Unenrolled!");
     }
 
+
+    /**
+     * This endpoint retrieves all announcements for a specific course that the authenticated user (employee) is enrolled in.
+     *
+     * The method first validates whether the user is authorized to view announcements for the specified course by calling
+     * the employeeCourseAuth service. If validation fails, an error response is returned. If validation succeeds, the
+     * announcements for the course are fetched and sorted in descending order of their update time. Each announcement is
+     * mapped to an AnnouncementRequestDTO containing the announcement's ID, title, content, and update timestamp. The
+     * resulting list of announcement DTOs is returned in the response.
+     *
+     * @param courseId The ID of the course for which announcements are being retrieved.
+     * @param authentication The authentication information of the current user (employee).
+     * @return A ResponseEntity containing a list of announcements represented by AnnouncementRequestDTO objects.
+     */
     @GetMapping("/course/{courseId}/announcements")
     public ResponseEntity<?> viewAnnouncements(
             @PathVariable Long courseId, Authentication authentication) {
@@ -212,6 +298,21 @@ public class EmployeeController {
         return ResponseEntity.ok(announcementDTOs);
     }
 
+    /**
+     * This endpoint retrieves the details of a specific announcement identified by its ID.
+     *
+     * The method first fetches the announcement from the database using the provided announcement ID. If the
+     * announcement does not exist, an error response is returned. If the announcement is found, the associated course
+     * is retrieved, and the method validates whether the authenticated user (employee) is authorized to access the course
+     * using the employeeCourseAuth service. If validation fails, an error response is returned. If validation succeeds,
+     * an AnnouncementRequestDTO is created with the announcement's details, including ID, title, content, and update
+     * timestamp, and returned in the response.
+     *
+     * @param id The ID of the announcement to retrieve.
+     * @param authentication The authentication information of the current user (employee).
+     * @return A ResponseEntity containing the announcement details represented by an AnnouncementRequestDTO object,
+     *         or an error message if the announcement is not found or access is unauthorized.
+     */
     @GetMapping("/getAnnouncementById/{id}")
     public ResponseEntity<?> getAnnouncementById(
             @PathVariable Long id, Authentication authentication) {
@@ -241,6 +342,19 @@ public class EmployeeController {
     }
 
     // Endpoint to view the syllabus for a course
+    /**
+     * This endpoint allows users to download the syllabus for a specific course.
+     *
+     * The method first fetches the course details using the provided course ID. If the course does not exist, an
+     * error response is returned. If the course exists but does not have a syllabus uploaded, an appropriate error
+     * message is returned. If a syllabus is available, the method retrieves the syllabus data as a byte array from
+     * the fileService, wraps it in a ByteArrayResource, and returns it as a downloadable PDF file with appropriate
+     * headers set for content disposition and content type.
+     *
+     * @param courseId The ID of the course whose syllabus is to be downloaded.
+     * @return A ResponseEntity containing the syllabus as a downloadable PDF file or an error message if the course or
+     *         syllabus is invalid or unavailable.
+     */
     @GetMapping("/{courseId}/syllabus")
     public ResponseEntity<?> viewSyllabus(@PathVariable Long courseId) {
 
@@ -270,6 +384,20 @@ public class EmployeeController {
 
     }
 
+    /**
+     * This endpoint retrieves all course materials for a specific course that the authenticated user (employee) is enrolled in.
+     *
+     * The method first validates whether the user is authorized to access the specified course using the employeeCourseAuth
+     * service. If validation fails, an error response is returned. If validation succeeds, the method fetches the course
+     * and its associated materials. If no materials are available, an empty list is returned. Otherwise, each course material
+     * is mapped to a CourseMaterialDTO containing details such as the material ID, title, and description. The resulting list
+     * of course material DTOs is returned in the response.
+     *
+     * @param courseId The ID of the course for which materials are being retrieved.
+     * @param authentication The authentication information of the current user (employee).
+     * @return A ResponseEntity containing a list of course materials represented by CourseMaterialDTO objects,
+     *         or an error message if access is unauthorized.
+     */
     @GetMapping("/getCourseMaterials/{courseId}")
     public ResponseEntity<?> getAllCourseMaterials(@PathVariable Long courseId, Authentication authentication)
     {
@@ -299,6 +427,21 @@ public class EmployeeController {
         }
     }
 
+    /**
+     * This endpoint allows the authenticated user (employee) to download a specific course material for a course they are enrolled in.
+     *
+     * The method first validates whether the user is authorized to access the specified course using the employeeCourseAuth service.
+     * If the validation fails, an error response is returned. If the validation succeeds, the course material is fetched by its ID.
+     * The file associated with the course material is then retrieved as a byte array using the fileService. The byte array is wrapped
+     * in a ByteArrayResource and returned as a downloadable file. The response includes appropriate headers for content disposition
+     * and content type to facilitate file download.
+     *
+     * @param courseId The ID of the course containing the material.
+     * @param courseMaterialId The ID of the specific course material to retrieve.
+     * @param authentication The authentication information of the current user (employee).
+     * @return A ResponseEntity containing the course material as a downloadable file, or an error message if access is unauthorized
+     *         or the material is unavailable.
+     */
     @GetMapping("/getCourseMaterial/{courseId}/{courseMaterialId}")
     public ResponseEntity<?> getCourseMaterialById(@PathVariable Long courseId, @PathVariable("courseMaterialId") Long courseMaterialId, Authentication authentication)
     {
@@ -327,6 +470,20 @@ public class EmployeeController {
 
     }
 
+    /**
+     * This endpoint allows an authenticated user (employee) to upload an assignment submission for a specific course and assignment.
+     *
+     * The method first validates whether the user is authorized to access the specified course using the employeeCourseAuth service.
+     * If the validation fails, an error response is returned. If validation succeeds, the user's details are retrieved from the
+     * authentication object. The assignment and course details are fetched to ensure the assignment is valid and linked to the correct course.
+     * The uploaded file is then stored using the fileService, and a success response with the upload details is returned.
+     *
+     * @param file The multipart file containing the assignment submission.
+     * @param authentication The authentication information of the current user (employee).
+     * @param assignmentID The ID of the assignment being submitted.
+     * @param courseID The ID of the course to which the assignment belongs.
+     * @return A ResponseEntity containing the upload details or an error message if validation or upload fails.
+     */
     @PostMapping("/uploadAssignment")
     public ResponseEntity<?> uploadAssignment(@RequestParam("file") MultipartFile file,
                                               Authentication authentication, @RequestParam("assignmentId") String assignmentID,
@@ -351,8 +508,23 @@ public class EmployeeController {
         return ResponseEntity.ok( fileService.uploadAssignmentSubmission( file, course, assignmentDetails, employee ) );
     }
 
-    //Method to update the Assignment uploaded. The system always keeps the latest copy of the assignment
-    //and removes the previously uploaded file.
+    /**
+     * This endpoint allows an authenticated user (employee) to update a previously uploaded assignment submission for a specific course.
+     *
+     * The method first validates whether the user is authorized to access the specified course using the employeeCourseAuth service.
+     * If validation fails, an error response is returned. If validation succeeds, the existing submission details are retrieved.
+     * If the submission has already been graded, the user is restricted from updating it, and an error response is returned.
+     *
+     * If the submission is eligible for updating, the previously uploaded file is deleted using the fileService. If the deletion
+     * is successful, the new file is uploaded as a replacement, and the updated submission details are returned. If the deletion fails,
+     * an appropriate error response is returned.
+     *
+     * @param submissionID The ID of the existing submission to be updated.
+     * @param file The new multipart file to replace the previous submission.
+     * @param courseID The ID of the course to which the submission belongs.
+     * @param authentication The authentication information of the current user (employee).
+     * @return A ResponseEntity containing the updated submission details or an error message if validation, deletion, or update fails.
+     */
     @PutMapping("/updateUploadedAssignment/{submissionId}")
     public ResponseEntity<?> updateUploadedAssignment( @PathVariable("submissionId") String submissionID,
                                                        @RequestParam("file") MultipartFile file,
@@ -435,6 +607,19 @@ public class EmployeeController {
         return ResponseEntity.ok(assignmentsList);
     }
 
+    /**
+     * This endpoint retrieves all assignments for a specific course, along with the submission details of the authenticated user (employee) for each assignment.
+     *
+     * The method first validates if the authenticated user is authorized to access the specified course using the employeeCourseAuth service.
+     * If validation fails, an error response is returned. If validation succeeds, the employee's details are fetched using the authentication object.
+     *
+     * The assignments for the course are retrieved and sorted by their deadlines. For each assignment, the user's submission details are checked and included
+     * if available. The response consists of assignment details and the user's corresponding submission information, if any.
+     *
+     * @param courseId The ID of the course for which the assignments are to be retrieved.
+     * @param authentication The authentication information of the current user (employee).
+     * @return A ResponseEntity containing a list of AssignmentResponseDTOs with assignment and submission details, or an error message if validation fails.
+     */
     @GetMapping("/course/{courseId}/assignments/{assignmentId}")
     public ResponseEntity<?> getAssignmentByID( @PathVariable Long courseId, @PathVariable Long assignmentId, Authentication authentication )
     {
@@ -481,6 +666,20 @@ public class EmployeeController {
         }
     }
 
+    /**
+     * This endpoint retrieves the submission for a specific assignment for a particular employee in a course.
+     *
+     * The method first validates if the authenticated user is authorized to access the specified course using the employeeCourseAuth service.
+     * If validation fails, an error response is returned. Next, it checks whether the assignment belongs to the specified course and validates its association.
+     *
+     * If valid, the method retrieves the submission details for the authenticated employee. If the employee has not submitted the assignment,
+     * an error message is returned. If a submission exists, the file is retrieved from storage and returned as a downloadable PDF.
+     *
+     * @param courseId The ID of the course in which the assignment exists.
+     * @param assignmentId The ID of the assignment for which the submission is being requested.
+     * @param authentication The authentication information of the current user (employee).
+     * @return A ResponseEntity containing the assignment submission file if available, or an error message if validation fails or no submission exists.
+     */
     @GetMapping( "/course/{courseId}/assignment/{assignmentId}/viewSubmission" )
     public ResponseEntity<?> getAssignmentSubmissionForEmployee( @PathVariable Long courseId, @PathVariable Long assignmentId, Authentication authentication )
     {
@@ -533,6 +732,23 @@ public class EmployeeController {
 
     }
 
+    /**
+     * This endpoint retrieves the grades and submission statuses for all assignments in a course for the authenticated employee.
+     *
+     * The method first validates if the authenticated employee is enrolled in the specified course using the employeeCourseAuth service.
+     * If the employee is not authorized for the course, an error response is returned.
+     *
+     * It then fetches all assignments for the course and checks whether the employee has submitted each assignment. For each assignment,
+     * it retrieves the submission details (if available), including the status of the submission and its grade (if graded).
+     * If no submission exists for an assignment, the status is set to "PENDING".
+     *
+     * A list of `EmployeeAssignmentGradeDTO` objects is populated with this data, which includes the assignment ID, assignment name, submission ID,
+     * submission status, and grade (if available). The final list is returned as a response.
+     *
+     * @param courseId The ID of the course for which the grades and assignments are being requested.
+     * @param authentication The authentication information of the current user (employee).
+     * @return A ResponseEntity containing a list of EmployeeAssignmentGradeDTO objects with the employee's assignment grades and statuses.
+     */
     @GetMapping("/getGrades/{courseId}")
     public ResponseEntity<?> getGradesAndAssignments(@PathVariable Long courseId, Authentication authentication) {
         Users employeeDetails = userService.findUserByEmail( authentication.getName());
@@ -576,7 +792,21 @@ public class EmployeeController {
 
     }
 
-
+    /**
+     * This endpoint allows an employee (student) to send a message to the instructor of a course.
+     *
+     * The method first validates if the employee is authorized to send a message for the specified course.
+     * If the employee is not enrolled in the course or doesn't have permission to send the message, an error response is returned.
+     *
+     * It then creates a new message object using the details provided in the `messageRequestDTO`, such as the message content and the recipient (instructor).
+     * The message is saved to the database, and a response DTO (`MessageResponseDTO`) is generated using the saved message.
+     *
+     * Finally, the response containing the message details is returned to the client.
+     *
+     * @param messageRequestDTO The request body containing the message content, course ID, and recipient information.
+     * @param authentication The authentication information of the current user (employee).
+     * @return A ResponseEntity containing the response DTO with the details of the sent message.
+     */
     @PostMapping("/message/sendMessage")
     public ResponseEntity<?> sendMessageToInstructor( @RequestBody MessageRequestDTO messageRequestDTO, Authentication authentication )
     {
@@ -612,6 +842,18 @@ public class EmployeeController {
         return ResponseEntity.ok( messageResponseDTO );
     }
 
+    /**
+     * This endpoint retrieves all the messages sent by an employee (student) to the instructor of a specific course.
+     *
+     * The method first validates if the employee is enrolled in the specified course. If the employee is not enrolled, an error response is returned.
+     *
+     * If the employee is valid, it fetches the list of messages the employee has sent to the instructor for the given course. If messages exist, they are returned in the response DTO.
+     * If no messages are found, an empty list is returned in the response DTO.
+     *
+     * @param courseId The ID of the course to fetch sent messages for.
+     * @param authentication The authentication information of the current user (employee).
+     * @return A ResponseEntity containing the response DTO with the list of sent messages.
+     */
     @GetMapping( "/course/{courseId}/message/getSentMessages" )
     public ResponseEntity<?> getMessagesSentToInstructor( @PathVariable("courseId") Long courseId, Authentication authentication )
     {
@@ -646,6 +888,18 @@ public class EmployeeController {
         }
     }
 
+    /**
+     * This endpoint retrieves all the messages received by an employee (student) from the instructor of a specific course.
+     *
+     * The method first validates if the employee is enrolled in the specified course. If the employee is not enrolled, an error response is returned.
+     *
+     * If the employee is valid, it fetches the list of messages received by the employee for the given course. If messages exist, they are returned in the response DTO.
+     * If no messages are found, an empty list is returned in the response DTO.
+     *
+     * @param courseId The ID of the course to fetch received messages for.
+     * @param authentication The authentication information of the current user (employee).
+     * @return A ResponseEntity containing the response DTO with the list of received messages.
+     */
     @GetMapping("/course/{courseId}/message/getReceivedMessages")
     public ResponseEntity<?> getMessagesReceivedFromInstructor( @PathVariable Long courseId , Authentication authentication )
     {
@@ -680,6 +934,18 @@ public class EmployeeController {
         }
     }
 
+    /**
+     * This endpoint updates the status of a message to "read" for a particular message and course.
+     *
+     * It validates whether the employee (student) is authorized to access the specified course and message.
+     * If valid, the message status is updated to "read" and the updated message is returned in the response.
+     * If the message doesn't exist, a "no content" error response is returned.
+     *
+     * @param messageId The ID of the message to be marked as read.
+     * @param courseId The ID of the course associated with the message.
+     * @param authentication The authentication details of the current user (employee).
+     * @return A ResponseEntity containing the updated message details or an error response if the message doesn't exist.
+     */
     @PutMapping("/message/readMessage")
     public ResponseEntity<?> setMessageStatusToRead( @RequestParam("messageId") Long messageId, @RequestParam("courseId") Long courseId, Authentication authentication )
     {
